@@ -1,0 +1,17 @@
+{
+  "sites": {
+    "tinder": {
+      "enabled": true,
+      "likeRatio": 0.9,
+      "swipeDelay": {
+        "min": 1000,
+        "max": 1500
+      },
+      "maxSwipesPerSession": 100
+    }
+  },
+  "browser": {
+    "headless": false,
+    "profilePath": "./browser-profile"
+  }
+}
