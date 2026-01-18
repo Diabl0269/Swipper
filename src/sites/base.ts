@@ -1,6 +1,6 @@
 import { Page } from 'playwright';
-import { Logger } from '../utils/logger.js';
-import { SiteConfig } from '../types.js';
+import { Logger } from '../utils/logger';
+import { SiteConfig } from '../types';
 
 /**
  * Interface for a site module, defining the required methods for interacting with a dating site.

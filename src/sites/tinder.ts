@@ -1,7 +1,7 @@
 import { Page } from "playwright";
-import { BaseSite } from "./base.js";
-import { SiteConfig } from "../types.js";
-import { Logger } from "../utils/logger.js";
+import { BaseSite } from "./base";
+import { SiteConfig } from "../types";
+import { Logger } from "../utils/logger";
 
 /**
  * The site module for Tinder.

@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Implement core swiping functionality for OkCupid**
+- [~] **Track: Implement core swiping functionality for OkCupid**
   *Link: [./tracks/okcupid_integration_20260118/](./tracks/okcupid_integration_20260118/)*

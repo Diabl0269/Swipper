@@ -19,3 +19,7 @@ This document outlines the technology stack for the Swiper project.
 -   **`typescript`**: The TypeScript compiler.
 -   **`typedoc`**: For generating documentation from TypeScript source code.
 -   **`eslint`**: For static code analysis and enforcing code style.
+
+## Notes
+
+- **`chalk` version:** The version of `chalk` is pinned to `4.1.2` to maintain CommonJS compatibility for testing with Jest. Newer versions are ESM-only.

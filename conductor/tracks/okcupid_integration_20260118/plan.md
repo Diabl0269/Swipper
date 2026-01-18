@@ -4,7 +4,7 @@ This plan outlines the tasks required to add support for OkCupid to the Swiper b
 
 ## Phase 1: Foundation and Configuration
 
--   [ ] **Task:** Create a new site implementation file at `src/sites/okcupid.ts`.
+-   [~] **Task:** Create a new site implementation file at `src/sites/okcupid.ts`.
     -   [ ] Create a `OkCupid` class that extends the `Site` base class from `src/sites/base.ts`.
 -   [ ] **Task:** Update the configuration system to support OkCupid.
     -   [ ] Modify `src/types.ts` to include `okcupid` in the site configuration types.
