@@ -111,6 +111,14 @@ npm start -- [options]
 npm start -- --headless -d
 ```
 
+### Current Operational Notes
+
+- **Browser Connection:** Currently, Swiper requires an active connection to your original Google Chrome browser to utilize your existing login session. Ensure Chrome is open and you are logged into the target dating site.
+- **Module Status:**
+    - The **Tinder** module is fully functional and actively maintained.
+    - The **OkCupid** module is currently experiencing issues and appears to be blocked by the site's anti-bot measures. Development for OkCupid is paused until a resolution is found.
+
+
 ## Project Structure
 
 ```
