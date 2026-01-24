@@ -13,6 +13,15 @@ const DEFAULT_CONFIG: AppConfig = {
       },
       maxSwipesPerSession: 400,
     },
+    okcupid: { // Added default config for OkCupid
+      enabled: false, // Disabled by default
+      likeRatio: 0.8,
+      swipeDelay: {
+        min: 1500,
+        max: 2500,
+      },
+      maxSwipesPerSession: 300,
+    },
   },
   browser: {
     headless: false,
@@ -54,20 +63,36 @@ export class Config {
   ): AppConfig {
     // Deep merge sites configuration
     const mergedSites: AppConfig["sites"] = { ...defaultConfig.sites };
+    const globalFileConfig = fileConfig.sites?.global;
 
     if (fileConfig.sites) {
       for (const [siteName, siteConfig] of Object.entries(fileConfig.sites)) {
+        if (siteName === "global") continue; // Skip global config itself
+
         if (siteConfig) {
           const defaultSiteConfig = defaultConfig.sites[siteName];
-          // Merge individual site configs deeply
+
+          // Start with default config, then apply global file config, then site-specific file config
+          let currentSiteConfig: SiteConfig = { ...defaultSiteConfig } as SiteConfig;
+
+          if (globalFileConfig) {
+            currentSiteConfig = {
+              ...currentSiteConfig,
+              ...globalFileConfig,
+              swipeDelay:
+                globalFileConfig.swipeDelay && currentSiteConfig.swipeDelay
+                  ? { ...currentSiteConfig.swipeDelay, ...globalFileConfig.swipeDelay }
+                  : globalFileConfig.swipeDelay || currentSiteConfig.swipeDelay,
+            };
+          }
+
           mergedSites[siteName] = {
-            ...defaultSiteConfig,
+            ...currentSiteConfig,
             ...siteConfig,
-            // Deep merge swipeDelay if it exists
             swipeDelay:
-              siteConfig.swipeDelay && defaultSiteConfig?.swipeDelay
-                ? { ...defaultSiteConfig.swipeDelay, ...siteConfig.swipeDelay }
-                : siteConfig.swipeDelay || defaultSiteConfig?.swipeDelay,
+              siteConfig.swipeDelay && currentSiteConfig.swipeDelay
+                ? { ...currentSiteConfig.swipeDelay, ...siteConfig.swipeDelay }
+                : siteConfig.swipeDelay || currentSiteConfig.swipeDelay,
           } as SiteConfig;
         }
       }

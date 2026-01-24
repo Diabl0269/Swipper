@@ -8,6 +8,15 @@
         "max": 1500
       },
       "maxSwipesPerSession": 100
+    },
+    "okcupid": {
+      "enabled": true,
+      "likeRatio": 0.8,
+      "swipeDelay": {
+        "min": 1500,
+        "max": 2500
+      },
+      "maxSwipesPerSession": 300
     }
   },
   "browser": {

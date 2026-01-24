@@ -42,6 +42,13 @@ export interface SiteModule {
   hasMoreProfiles(page: Page): Promise<boolean>;
 
   /**
+   * Dismisses any active popups or modals on the page.
+   * @param page - The Playwright page instance.
+   * @returns A promise that resolves to true if a popup was dismissed, false otherwise.
+   */
+  dismissPopup(page: Page): Promise<boolean>;
+
+  /**
    * Gets the base URL of the site.
    * @returns The site's URL.
    */
@@ -71,4 +78,9 @@ export abstract class BaseSite implements SiteModule {
   abstract swipe(page: Page, action: 'like' | 'dislike'): Promise<boolean>;
   abstract hasMoreProfiles(page: Page): Promise<boolean>;
   abstract getUrl(): string;
+
+  async dismissPopup(page: Page): Promise<boolean> {
+    // Default implementation: do nothing and return false
+    return false;
+  }
 }
