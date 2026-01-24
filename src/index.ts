@@ -7,6 +7,7 @@ import { Logger, LogLevel } from "./utils/logger.js";
 import { RateLimiter } from "./utils/rateLimiter.js";
 import { Swiper } from "./swiper.js";
 import { TinderSite } from "./sites/tinder.js";
+import { OkCupidSite } from "./sites/okcupid.js";
 
 const program = new Command();
 
@@ -21,7 +22,10 @@ program
   .action(async (options) => {
     try {
       // Initialize logger
-      const logLevel = options.debug ? LogLevel.DEBUG : LogLevel.INFO;
+      let logLevel = LogLevel.INFO;
+      if (options.debug) {
+        logLevel = LogLevel.DEBUG;
+      }
       const logger = new Logger(logLevel);
 
       logger.info("Starting Swiper...");
@@ -47,6 +51,12 @@ program
         process.exit(1);
       }
 
+      // If site-specific debugMode is enabled, override the global debug level
+      if (siteConfig.debugMode) {
+        logger.setLogLevel(LogLevel.DEBUG);
+        logger.debug(`Site-specific debug mode enabled for ${siteName}.`);
+      }
+
       // Initialize browser
       const browserManager = new BrowserManager(browserConfig, logger);
       await browserManager.initialize();
@@ -56,6 +66,9 @@ program
       switch (siteName) {
         case "tinder":
           siteModule = new TinderSite(siteConfig, logger);
+          break;
+        case "okcupid":
+          siteModule = new OkCupidSite(siteConfig, logger);
           break;
         default:
           logger.error(`Unsupported site: ${siteName}`);

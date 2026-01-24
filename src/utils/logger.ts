@@ -31,6 +31,22 @@ export class Logger {
   }
 
   /**
+   * Sets the current log level.
+   * @param level - The new log level.
+   */
+  setLogLevel(level: LogLevel) {
+    this.logLevel = level;
+  }
+
+  /**
+   * Gets the current log level.
+   * @returns The current log level.
+   */
+  getLogLevel(): LogLevel {
+    return this.logLevel;
+  }
+
+  /**
    * Formats a log message with a timestamp and level.
    * @param level - The log level.
    * @param message - The log message.

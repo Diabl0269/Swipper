@@ -72,41 +72,73 @@ export class TinderSite extends BaseSite {
    * @returns A promise that resolves to true if a popup was dismissed, false otherwise.
    */
   async dismissPopup(page: Page): Promise<boolean> {
+    this.logger.debug("Attempting to dismiss popup...");
     try {
       // Check for "Maybe Later" button in various possible locations
       const maybeLaterSelectors = [
+        '[aria-label="Close"]', // Added for match popup
+        'button[aria-label="Close"]', // Added for match popup
+        'button:has-text("X")', // Generic close button
         'button:has-text("Maybe Later")',
         'text="Maybe Later"',
         '[aria-label*="Maybe Later"]',
         'button:has-text("Not now")',
         'text="Not now"',
+        'button:has-text("Not interested")',
+        'text="Not interested"',
+        '[aria-label*="Not interested"]',
       ];
 
       for (const selector of maybeLaterSelectors) {
+        this.logger.debug(`Trying selector: "${selector}"`);
         try {
           const button = page.locator(selector).first();
-          const isVisible = await button.isVisible({ timeout: 2000 });
+          const isVisible = await button.isVisible({ timeout: 1000 }).catch(() => false); // Reduced timeout to quickly check
           if (isVisible) {
-            this.logger.info(
-              "Found popup with 'Maybe Later' button, dismissing..."
-            );
-            await button.click();
-            // Wait longer for popup to close and page to update
-            await page.waitForTimeout(3000);
-            this.logger.success(
-              "Popup dismissed, waiting for page to update..."
-            );
-            return true;
+            this.logger.debug(`Button found and visible with selector: "${selector}"`);
+            // Get bounding box of the button
+            const boundingBox = await button.boundingBox();
+            if (boundingBox) {
+              this.logger.debug(
+                `Button bounding box: x=${boundingBox.x}, y=${boundingBox.y}, width=${boundingBox.width}, height=${boundingBox.height}`
+              );
+              // Get viewport size
+              const viewportSize = page.viewportSize();
+              if (viewportSize) {
+                this.logger.debug(`Viewport size: width=${viewportSize.width}, height=${viewportSize.height}`);
+                // Check if the button is smaller than the viewport (to avoid dismissing large background elements)
+                if (
+                  boundingBox.width < viewportSize.width &&
+                  boundingBox.height < viewportSize.height
+                ) {
+                  this.logger.info(`Found popup button with selector: "${selector}", dismissing...`);
+                  await button.click();
+                  // Wait longer for popup to close and page to update
+                  await page.waitForTimeout(3000);
+                  this.logger.success("Popup dismissed successfully.");
+                  return true;
+                } else {
+                  this.logger.debug(`Button with selector "${selector}" found but too large to be a popup (likely a background element).`);
+                }
+              } else {
+                this.logger.debug("Could not get viewport size.");
+              }
+            } else {
+              this.logger.debug(`Could not get bounding box for button with selector: "${selector}"`);
+            }
+          } else {
+            this.logger.debug(`Button with selector "${selector}" not visible.`);
           }
         } catch (e) {
+          this.logger.debug(`Error with selector "${selector}": ${e}`);
           // Try next selector
           continue;
         }
       }
-
+      this.logger.debug("No popup dismissed after trying all selectors.");
       return false;
     } catch (error) {
-      this.logger.debug(`Error checking for popup: ${error}`);
+      this.logger.debug(`Error in dismissPopup: ${error}`);
       return false;
     }
   }
@@ -491,6 +523,9 @@ export class TinderSite extends BaseSite {
    */
   async swipe(page: Page, action: "like" | "dislike"): Promise<boolean> {
     try {
+      // Always check for popups before swiping
+      await this.dismissPopup(page);
+
       // Tinder uses keyboard shortcuts or buttons
       // Right arrow = like, Left arrow = dislike
       if (action === "like") {

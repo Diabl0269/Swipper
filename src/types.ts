@@ -20,6 +20,8 @@ export interface SiteConfig {
   swipeDelay: SwipeDelay;
   /** The maximum number of swipes per session. */
   maxSwipesPerSession: number;
+  /** Optional: Whether to enable debug logging for this site. */
+  debugMode?: boolean;
 }
 
 /**
@@ -39,6 +41,8 @@ export interface AppConfig {
   /** Configuration for each supported dating site. */
   sites: {
     tinder?: SiteConfig;
+    okcupid?: SiteConfig;
+    global?: SiteConfig;
     [key: string]: SiteConfig | undefined;
   };
   /** Configuration for the browser. */

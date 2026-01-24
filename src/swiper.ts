@@ -118,11 +118,6 @@ export class Swiper {
       this.logger.info(`Starting swiping session (max ${this.config.maxSwipesPerSession} swipes)...`);
       
       while (this.stats.totalSwipes < this.config.maxSwipesPerSession) {
-        // Check for and dismiss any popups that might appear during swiping
-        if (this.siteModule instanceof TinderSite) {
-          await this.siteModule.dismissPopup(page);
-        }
-
         // Check if we still have profiles
         const hasMore = await this.siteModule.hasMoreProfiles(page);
         if (!hasMore) {
