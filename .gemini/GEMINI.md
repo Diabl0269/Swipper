@@ -31,6 +31,8 @@ npm run dev -- --site okcupid
 npm run start -- --site <site_name>
 ```
 
+**Best Practice**: Whenever unsure about specific versions, commands, or external information, always search online for the most updated and relevant information rather than making assumptions.
+
 ## Architectural Notes
 
 -   **Modular Design**: The project is designed to be extensible. To add a new site, create a new class in `src/sites/` that extends `BaseSite` and implement the required methods.
