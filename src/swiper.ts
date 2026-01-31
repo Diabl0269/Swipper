@@ -1,4 +1,5 @@
 import { Page } from 'playwright';
+import { writeFileSync } from 'fs';
 import { BrowserManager } from './utils/browser.js';
 import { SiteModule } from './sites/base.js';
 import { RateLimiter } from './utils/rateLimiter.js';
@@ -166,6 +167,25 @@ export class Swiper {
       return this.stats;
     } catch (error) {
       this.logger.error(`Error during swiping: ${error}`);
+      
+      // Take a snapshot and screenshot on error for debugging
+      if (page && !page.isClosed()) {
+        try {
+          const timestamp = Date.now();
+          const screenshotPath = `error_screenshot_${timestamp}.png`;
+          const htmlPath = `error_page_${timestamp}.html`;
+
+          await page.screenshot({ path: screenshotPath, fullPage: true });
+          this.logger.info(`Saved error screenshot to: ${screenshotPath}`);
+
+          const html = await page.content();
+          writeFileSync(htmlPath, html);
+          this.logger.info(`Saved error page HTML to: ${htmlPath}`);
+        } catch (snapshotError) {
+          this.logger.error(`Failed to take snapshot/screenshot: ${snapshotError}`);
+        }
+      }
+
       throw error;
     } finally {
       await page.close();

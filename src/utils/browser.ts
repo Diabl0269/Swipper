@@ -186,6 +186,13 @@ export class BrowserManager {
         // Don't override userAgent - use Chrome's default
       });
 
+      // Hide the fact that we are using a web driver
+      await this.context.addInitScript(() => {
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => false,
+        });
+      });
+
       this.logger.success('Browser initialized with Chrome profile copy');
       this.logger.info('Note: Chrome can remain open - we\'re using a copy of your profile');
       return this.context;

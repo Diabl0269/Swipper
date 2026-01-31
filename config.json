@@ -16,7 +16,7 @@
         "min": 1500,
         "max": 2500
       },
-      "maxSwipesPerSession": 300
+      "maxSwipesPerSession": 1000
     }
   },
   "browser": {

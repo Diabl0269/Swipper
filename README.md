@@ -14,6 +14,10 @@
 - **Headless & Headful Modes:** Run with a visible browser for monitoring or in headless mode for discretion.
 - **Debug Mode:** Verbose logging to help with development and troubleshooting.
 
+## 📚 Documentation
+
+For detailed information about the project's architecture, setup procedures, and in-depth notes on site-specific implementations, please refer to the files in the `/docs` directory.
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -116,7 +120,7 @@ npm start -- --headless -d
 - **Browser Connection:** Currently, Swiper requires an active connection to your original Google Chrome browser to utilize your existing login session. Ensure Chrome is open and you are logged into the target dating site.
 - **Module Status:**
     - The **Tinder** module is fully functional and actively maintained.
-    - The **OkCupid** module is currently experiencing issues and appears to be blocked by the site's anti-bot measures. Development for OkCupid is paused until a resolution is found.
+    - The **OkCupid** module is now functional after significant improvements to its popup and anti-detection handling. Note that it may still be intermittently blocked by Cloudflare security challenges.
 
 
 ## Project Structure
