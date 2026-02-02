@@ -45,8 +45,8 @@ export class Config {
       const configFile = readFileSync(path, "utf-8");
       const fileConfig = JSON.parse(configFile) as Partial<AppConfig>;
       this.config = this.mergeConfig(DEFAULT_CONFIG, fileConfig);
-    } catch (error) {
-      console.warn("Could not load config.json, using defaults");
+    } catch (_error) {
+      console.warn(`Could not load config.json, using defaults: ${String(_error)}`);
       this.config = DEFAULT_CONFIG;
     }
   }
