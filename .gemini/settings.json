@@ -1,4 +1,7 @@
 {
+  "security": {
+    "enablePermanentToolApproval": true
+  },
   "mcpServers": {
     "browsermcp": {
       "command": "npx",

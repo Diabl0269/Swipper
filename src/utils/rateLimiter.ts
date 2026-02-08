@@ -1,5 +1,5 @@
-import { SiteConfig, SwipeDecision } from '../types.js';
-import { Logger } from './logger.js';
+import { SiteConfig, SwipeDecision } from '../types'; // Removed .js
+import { Logger } from './logger'; // Removed .js
 
 /**
  * Manages swipe rate limiting and decision making.

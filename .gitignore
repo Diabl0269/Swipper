@@ -5,3 +5,4 @@ browser-profile/
 .env
 .DS_Store
 
+coverage/
