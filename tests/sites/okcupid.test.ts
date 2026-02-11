@@ -1,14 +1,14 @@
 import { Page, Locator } from 'playwright';
 import { OkCupidSite } from '../../src/sites/okcupid';
 import type { SiteConfig } from '../../src/types';
-import type { Logger } from '../../src/utils/logger';
+import { Logger } from '../../src/utils/logger';
 import * as helpers from '../../src/utils/helpers';
 
 // Mock dependencies
 jest.mock('../../src/utils/logger');
 jest.mock('../../src/utils/helpers', () => ({
-  humanClick: jest.fn<[Page, Locator], Promise<void>>(),
-  random: jest.fn<[number, number], number>(),
+  humanClick: jest.fn(),
+  random: jest.fn(),
 }));
 
 describe('OkCupidSite', () => {

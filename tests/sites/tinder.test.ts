@@ -1,6 +1,6 @@
 import { TinderSite } from '../../src/sites/tinder';
 import type { SiteConfig } from '../../src/types';
-import type { Logger } from '../../src/utils/logger';
+import { Logger } from '../../src/utils/logger';
 import { Page, Locator, Keyboard } from 'playwright'; // Import Keyboard
 
 // Mock dependencies
