@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    ".eslintrc.cjs" // Include any other files ESLint needs to parse
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

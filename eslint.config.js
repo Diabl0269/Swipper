@@ -12,7 +12,8 @@ module.exports = [
       "docs/**",
       "**/*.d.ts", // Ignore all generated declaration files
       "*.config.js", // Exclude eslint.config.js
-      "jest.config.js" // Explicitly exclude jest.config.js
+      "jest.config.js", // Explicitly exclude jest.config.js
+      "tsconfig.eslint.json", // Exclude the new tsconfig for eslint
     ],
   },
   {
@@ -23,7 +24,7 @@ module.exports = [
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
-        project: ["./tsconfig.json"],
+        project: ["./tsconfig.eslint.json"], // Modified to point to tsconfig.eslint.json
       },
     },
     plugins: {
@@ -44,7 +45,7 @@ module.exports = [
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
-        project: ["./tsconfig.json"],
+        project: ["./tsconfig.eslint.json"], // Modified to point to tsconfig.eslint.json
       },
     },
     plugins: {
