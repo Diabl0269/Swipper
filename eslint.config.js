@@ -54,6 +54,7 @@ module.exports = [
       ...pluginJs.configs.recommended.rules,
       ...tseslint.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-explicit-any": "off", // Disable for test files
       // Add custom rules specific to test files if needed
     },
   },

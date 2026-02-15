@@ -1,8 +1,8 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, Role } from '@playwright/test';
 import { OkCupidSite } from '../../src/sites/okcupid';
 import type { SiteConfig } from '../../src/types';
 import { Logger } from '../../src/utils/logger';
-import * as helpers from '../../src/utils/helpers'; // Import the original module for type information
+import { humanClick, random } from '../../src/utils/helpers';
 import { jest } from '@jest/globals';
 
 // Mock dependencies
@@ -13,18 +13,12 @@ jest.mock('../../src/utils/helpers', () => ({
   random: jest.fn(),
 }));
 
-// Get the mocked versions of the functions
-const mockedHumanClick = jest.mocked(helpers.humanClick);
-const mockedRandom = jest.mocked(helpers.random);
-
-
-
 describe('OkCupidSite', () => {
   let site: OkCupidSite;
   let config: SiteConfig;
   let logger: Logger;
-  let page: any; // Using 'any' for now to bypass strict checks on the mock object itself
-  let locator: any; // Using 'any' for now to bypass strict checks on the mock object itself
+  let page: jest.Mocked<Page>;
+  let locator: jest.Mocked<Locator>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -37,28 +31,56 @@ describe('OkCupidSite', () => {
     logger = new Logger();
     site = new OkCupidSite(config, logger);
 
-    // Simplified mocks for Page and Locator
-    // We will cast them to the correct type when passing to the site object
+    // Mock Locator methods
+    const mockLocatorFirst = jest.fn<() => Locator>().mockReturnThis();
+    const mockLocatorWaitFor = jest.fn<() => Promise<void>>();
+    const mockLocatorCount = jest.fn<() => Promise<number>>();
+    const mockLocatorIsVisible = jest.fn<() => Promise<boolean>>();
+    const mockLocatorGetByRole = jest.fn<() => Locator>().mockReturnThis();
+    const mockLocatorTextContent = jest.fn<() => Promise<string | null>>();
+    const mockLocatorLocator = jest.fn<() => Locator>().mockReturnThis();
+
+    // Assign mock implementations
+    mockLocatorWaitFor.mockResolvedValue(undefined);
+    mockLocatorCount.mockResolvedValue(0);
+    mockLocatorIsVisible.mockResolvedValue(true);
+    mockLocatorTextContent.mockResolvedValue(null);
+
     locator = {
-      first: jest.fn<() => Locator>().mockReturnThis(),
-      waitFor: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-      count: jest.fn<() => Promise<number>>().mockResolvedValue(0),
-      isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
-      getByRole: jest.fn<() => Locator>().mockReturnThis(),
-      textContent: jest.fn<() => Promise<string | null>>().mockResolvedValue(null),
-      locator: jest.fn<() => Locator>().mockReturnThis(),
-    } as any; // Use any to bypass strict type checking for the mock object itself
+      first: mockLocatorFirst,
+      waitFor: mockLocatorWaitFor,
+      count: mockLocatorCount,
+      isVisible: mockLocatorIsVisible,
+      getByRole: mockLocatorGetByRole,
+      textContent: mockLocatorTextContent,
+      locator: mockLocatorLocator,
+    } as Partial<jest.Mocked<Locator>> as jest.Mocked<Locator>;
+
+
+    // Mock Page methods
+    const mockPageLocator = jest.fn<() => Locator>();
+    type GetByRoleOptions = { name?: string | RegExp; exact?: boolean };
+    const mockPageGetByRole = jest.fn<(role: Role, options?: GetByRoleOptions) => Locator>();
+    const mockPageGoto = jest.fn<() => Promise<void>>();
+    const mockPageWaitForTimeout = jest.fn<() => Promise<void>>();
+    
+    // Assign mock implementations
+    mockPageLocator.mockReturnValue(locator);
+    mockPageGetByRole.mockReturnValue(locator); // This might need more complex implementation based on 'role' and 'options'
+    mockPageGoto.mockResolvedValue(undefined);
+    mockPageWaitForTimeout.mockResolvedValue(undefined);
 
     page = {
-      locator: jest.fn<() => Locator>().mockReturnValue(locator),
-      getByRole: jest.fn<() => Locator>().mockReturnValue(locator),
-      goto: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-      waitForTimeout: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-    } as any; // Use any to bypass strict type checking for the mock object itself
+      locator: mockPageLocator,
+      getByRole: mockPageGetByRole,
+      goto: mockPageGoto,
+      waitForTimeout: mockPageWaitForTimeout,
+    } as Partial<jest.Mocked<Page>> as jest.Mocked<Page>;
 
-    mockedRandom.mockClear();
-    mockedHumanClick.mockClear();
-    mockedRandom.mockReturnValue(2000);
+
+    (random as jest.Mock).mockClear();
+    (humanClick as jest.Mock).mockClear();
+    (random as jest.Mock).mockReturnValue(2000);
   });
 
   it('should be an instance of OkCupidSite', () => {
@@ -71,8 +93,8 @@ describe('OkCupidSite', () => {
 
   describe('isLoggedIn', () => {
     it('should return true if the logged-in indicator is found', async () => {
-      locator.first.mockReturnValue(locator);
-      locator.waitFor.mockResolvedValue(undefined); // Explicitly type
+      (locator.first as jest.Mock).mockReturnThis();
+      (locator.waitFor as jest.Mock).mockResolvedValue(undefined);
       const result = await site.isLoggedIn(page);
       expect(result).toBe(true);
       expect(page.locator).toHaveBeenCalledWith('a[href="/profile"], nav[aria-label="Primary"]');
@@ -80,16 +102,16 @@ describe('OkCupidSite', () => {
     });
 
     it('should return true if no logged-out indicators are found', async () => {
-      locator.waitFor.mockRejectedValue(new Error('timeout'));
-      locator.count.mockResolvedValue(0);
+      (locator.waitFor as jest.Mock).mockRejectedValue(new Error('timeout'));
+      (locator.count as jest.Mock).mockResolvedValue(0);
       const result = await site.isLoggedIn(page);
       expect(result).toBe(true);
       expect(page.getByRole).toHaveBeenCalledWith('link', { name: /Sign In|Join OkCupid/i });
     });
 
     it('should return false if logged-out indicators are found', async () => {
-      locator.waitFor.mockRejectedValue(new Error('timeout'));
-      locator.count.mockResolvedValue(1);
+      (locator.waitFor as jest.Mock).mockRejectedValue(new Error('timeout'));
+      (locator.count as jest.Mock).mockResolvedValue(1);
       const result = await site.isLoggedIn(page);
       expect(result).toBe(false);
     });
@@ -97,222 +119,222 @@ describe('OkCupidSite', () => {
 
   describe('navigate', () => {
     it('should navigate to the correct URL and handle the cookie banner', async () => {
-      locator.waitFor.mockResolvedValue(undefined); // Explicitly type
+      (locator.waitFor as jest.Mock).mockResolvedValue(undefined);
       await site.navigate(page);
       expect(page.goto).toHaveBeenCalledWith('https://www.okcupid.com', { waitUntil: 'domcontentloaded' });
       expect(page.locator).toHaveBeenCalledWith('#onetrust-accept-btn-handler');
       expect(locator.waitFor).toHaveBeenCalledWith({ state: 'visible', timeout: 10000 });
-      expect(mockedHumanClick).toHaveBeenCalledWith(page, locator);
+      expect(humanClick).toHaveBeenCalledWith(page, locator);
       expect(page.waitForTimeout).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('should navigate to the correct URL and not fail if the cookie banner is not present', async () => {
-      locator.waitFor.mockRejectedValue(new Error('timeout')); // Explicitly type
+      (locator.waitFor as jest.Mock).mockRejectedValue(new Error('timeout'));
       await site.navigate(page);
       expect(page.goto).toHaveBeenCalledWith('https://www.okcupid.com', { waitUntil: 'domcontentloaded' });
-      expect(mockedHumanClick).not.toHaveBeenCalled();
+      expect(humanClick).not.toHaveBeenCalled();
     });
   });
 
   describe('dismissPopup', () => {
     it('should return true if "New likes" banner is visible and closed', async () => {
       // Mock for "New likes" banner (visible)
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockImplementation((selector) => {
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockImplementation((selector) => {
         if (selector === 'a:has-text("New likes")') {
           return {
             isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
             getByRole: jest.fn<() => Locator>().mockReturnValue({
               isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
-            } as any),
-          } as any;
+            } as Locator),
+          } as Locator;
         }
-        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
       });
 
       const result = await site.dismissPopup(page);
-      expect(result).toBe(true); // Banner was dismissed, so it returned true
-      expect(mockedHumanClick).toHaveBeenCalled();
+      expect(result).toBe(true);
+      expect(humanClick).toHaveBeenCalled();
       expect(page.waitForTimeout).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('should return true if "Like Them Anyway" button is visible and clicked', async () => {
       // Mock for "New likes" banner (not visible)
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any);
+      } as Locator);
 
       // Mock for "Like Them Anyway" button (visible)
       type GetByRoleOptions = { name?: string | RegExp; exact?: boolean };
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
         if (options && options.name === "LIKE THEM ANYWAY") {
-          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true) } as any;
+          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true) } as Locator;
         }
         // Default to not visible for other getByRole calls unless specifically mocked
-        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
       });
 
       const result = await site.dismissPopup(page);
       expect(result).toBe(true);
-      expect(mockedHumanClick).toHaveBeenCalled();
+      expect(humanClick).toHaveBeenCalled();
       expect(page.waitForTimeout).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('should return true if "IT’S A MATCH!" popup is visible and closed', async () => {
       // Mock for "New likes" banner (not visible)
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any);
+      } as Locator);
 
       // Mock for "Like Them Anyway" button (not visible)
       type GetByRoleOptions = { name?: string | RegExp; exact?: boolean };
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
         if (options && options.name === "LIKE THEM ANYWAY") {
-          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
         }
-        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
       });
 
       // Mock for "IT’S A MATCH!" popup (visible)
       const mutualMatchModalLocator = {
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
-        locator: jest.fn<() => Locator>().mockReturnValue({ // Mock the nested locator for the close button
+        locator: jest.fn<() => Locator>().mockReturnValue({
           isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
-        } as any),
-      } as any;
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce(mutualMatchModalLocator);
+        } as Locator),
+      } as Locator;
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce(mutualMatchModalLocator);
 
 
       const result = await site.dismissPopup(page);
       expect(result).toBe(true);
       expect(mutualMatchModalLocator.isVisible).toHaveBeenCalled();
       expect(mutualMatchModalLocator.locator).toHaveBeenCalledWith('button[data-cy="matchEvent.closeButton"]');
-      expect(mockedHumanClick).toHaveBeenCalled();
+      expect(humanClick).toHaveBeenCalled();
       expect(page.waitForTimeout).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('should return true if "Priority Likes" upsell popup is visible and closed', async () => {
       // Mock for previous popups (not visible)
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({ isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any); // New likes
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({ isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator);
       type GetByRoleOptions = { name?: string | RegExp; exact?: boolean };
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
         if (options && options.name === "LIKE THEM ANYWAY") {
-          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
         }
-        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
       });
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({ isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any); // IT’S A MATCH!
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({ isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator);
 
       // Mock for "Priority Likes" upsell popup (visible)
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
-      } as any);
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
+      } as Locator);
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
         if (options && options.name === "Close") {
-          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true) } as any;
+          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true) } as Locator;
         }
-        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
       });
 
 
       const result = await site.dismissPopup(page);
       expect(result).toBe(true);
-      expect(mockedHumanClick).toHaveBeenCalled();
+      expect(humanClick).toHaveBeenCalled();
       expect(page.waitForTimeout).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('should return true if "Enable Notifications" popup is visible and "Not now" is clicked', async () => {
       // Mock for previous popups (not visible)
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({ isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any); // New likes
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({ isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator);
       type GetByRoleOptions = { name?: string | RegExp; exact?: boolean };
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
         if (options && options.name === "LIKE THEM ANYWAY") {
-          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
         }
-        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
       });
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any); // IT’S A MATCH!
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      } as Locator);
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any); // Priority Likes
+      } as Locator);
 
       // Mock for "Enable Notifications" popup (visible)
       const notificationsDialogLocator = {
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
         getByRole: jest.fn<() => Locator>().mockReturnValue({
           isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
-        } as any),
-      } as any;
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce(notificationsDialogLocator);
+        } as Locator),
+      } as Locator;
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce(notificationsDialogLocator);
 
       const result = await site.dismissPopup(page);
       expect(result).toBe(true);
       expect(notificationsDialogLocator.isVisible).toHaveBeenCalled();
       expect(notificationsDialogLocator.getByRole).toHaveBeenCalledWith('button', { name: 'Not now' });
-      expect(mockedHumanClick).toHaveBeenCalled();
+      expect(humanClick).toHaveBeenCalled();
       expect(page.waitForTimeout).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('should return true if "MAYBE LATER" button is visible and clicked', async () => {
       // Mock for previous popups (not visible)
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any);
+      } as Locator);
 
       // Mock for "Like Them Anyway" button (not visible)
       type GetByRoleOptions = { name?: string | RegExp; exact?: boolean };
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
         if (options && options.name === "LIKE THEM ANYWAY") {
-          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
         }
-        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
       });
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any); // IT’S A MATCH!
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      } as Locator);
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any); // Priority Likes
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      } as Locator);
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any); // Enable Notifications
+      } as Locator);
 
       // Mock for "MAYBE LATER" button (visible)
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
-      } as any);
+      } as Locator);
 
       const result = await site.dismissPopup(page);
       expect(result).toBe(true);
-      expect(mockedHumanClick).toHaveBeenCalled();
+      expect(humanClick).toHaveBeenCalled();
       expect(page.waitForTimeout).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('should return true if a generic dialog with a close button is visible and clicked', async () => {
       // Mock for previous popups (not visible)
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any); // New likes
+      } as Locator);
       type GetByRoleOptions = { name?: string | RegExp; exact?: boolean };
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockImplementation((role, options: GetByRoleOptions) => {
         if (options && options.name === "LIKE THEM ANYWAY") {
-          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+          return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
         }
-        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any;
+        return { isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator;
       });
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any); // IT’S A MATCH!
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      } as Locator);
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any); // Priority Likes
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      } as Locator);
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any); // Enable Notifications
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce({
+      } as Locator);
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any); // Maybe Later
+      } as Locator);
 
       // Mock for generic dialog (visible)
       const genericDialogLocator = {
@@ -320,28 +342,28 @@ describe('OkCupidSite', () => {
         getByRole: jest.fn<() => Locator>().mockReturnValue({
           isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
           textContent: jest.fn<() => Promise<string | null>>().mockResolvedValue('Close'),
-        } as any),
-      } as any;
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce(genericDialogLocator);
+        } as Locator),
+      } as Locator;
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValueOnce(genericDialogLocator);
 
       const result = await site.dismissPopup(page);
       expect(result).toBe(true);
       expect(genericDialogLocator.isVisible).toHaveBeenCalled();
       expect(genericDialogLocator.getByRole).toHaveBeenCalledWith('button', { name: /Close|No Thanks|Dismiss|Maybe Later/i });
-      expect(mockedHumanClick).toHaveBeenCalled();
+      expect(humanClick).toHaveBeenCalled();
       expect(page.waitForTimeout).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('should return false if no popups are visible', async () => {
       // Mock for all popups (not visible)
-      (page.locator as jest.Mock<(...args: any[]) => Locator>).mockReturnValue({ isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as any);
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockReturnValue({
+      (page.locator as jest.Mock<(selector: string | Locator, options?: Parameters<Page['locator']>[1]) => Locator>).mockReturnValue({ isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false) } as Locator);
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockReturnValue({
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any);
+      } as Locator);
 
       const result = await site.dismissPopup(page);
       expect(result).toBe(false);
-      expect(mockedHumanClick).not.toHaveBeenCalled();
+      expect(humanClick).not.toHaveBeenCalled();
     });
   });
 
@@ -353,14 +375,14 @@ describe('OkCupidSite', () => {
       // Mock page.getByRole for like and pass buttons
       const likeButtonLocator = {
         waitFor: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-      } as any;
+      } as Locator;
       const passButtonLocator = {
         waitFor: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
-      } as any;
+      } as Locator;
 
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>)
-        .mockReturnValueOnce(likeButtonLocator) // for 'like' button
-        .mockReturnValueOnce(passButtonLocator); // for 'pass' button
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>)
+        .mockReturnValueOnce(likeButtonLocator)
+        .mockReturnValueOnce(passButtonLocator);
 
       const result = await site.waitForCards(page);
       expect(result).toBe(true);
@@ -377,14 +399,14 @@ describe('OkCupidSite', () => {
 
       const likeButtonLocator = {
         waitFor: jest.fn<() => Promise<void>>().mockRejectedValue(new Error('timeout')),
-      } as any;
+      } as Locator;
       const passButtonLocator = {
         waitFor: jest.fn<() => Promise<void>>().mockRejectedValue(new Error('timeout')),
-      } as any;
+      } as Locator;
 
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>)
-        .mockReturnValueOnce(likeButtonLocator) // for 'like' button
-        .mockReturnValueOnce(passButtonLocator); // for 'pass' button
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>)
+        .mockReturnValueOnce(likeButtonLocator)
+        .mockReturnValueOnce(passButtonLocator);
 
       const result = await site.waitForCards(page);
       expect(result).toBe(false);
@@ -399,14 +421,14 @@ describe('OkCupidSite', () => {
 
       const likeButtonLocator = {
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
-      } as any;
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce(likeButtonLocator);
+      } as Locator;
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockReturnValueOnce(likeButtonLocator);
 
       const result = await site.swipe(page, 'like');
       expect(result).toBe(true);
       expect(site.dismissPopup).toHaveBeenCalledWith(page);
       expect(page.getByRole).toHaveBeenCalledWith('button', { name: 'Like and view the next profile' });
-      expect(mockedHumanClick).toHaveBeenCalledWith(page, likeButtonLocator);
+      expect(humanClick).toHaveBeenCalledWith(page, likeButtonLocator);
     });
 
     it('should return true and call humanClick for "dislike" action if button is visible', async () => {
@@ -414,14 +436,14 @@ describe('OkCupidSite', () => {
 
       const dislikeButtonLocator = {
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
-      } as any;
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce(dislikeButtonLocator);
+      } as Locator;
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockReturnValueOnce(dislikeButtonLocator);
 
       const result = await site.swipe(page, 'dislike');
       expect(result).toBe(true);
       expect(site.dismissPopup).toHaveBeenCalledWith(page);
       expect(page.getByRole).toHaveBeenCalledWith('button', { name: 'Pass and view the next profile' });
-      expect(mockedHumanClick).toHaveBeenCalledWith(page, dislikeButtonLocator);
+      expect(humanClick).toHaveBeenCalledWith(page, dislikeButtonLocator);
     });
 
     it('should return false if the button is not visible', async () => {
@@ -429,14 +451,14 @@ describe('OkCupidSite', () => {
 
       const buttonLocator = {
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any;
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockReturnValueOnce(buttonLocator);
+      } as Locator;
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockReturnValueOnce(buttonLocator);
 
       const result = await site.swipe(page, 'like');
       expect(result).toBe(false);
       expect(site.dismissPopup).toHaveBeenCalledWith(page);
       expect(page.getByRole).toHaveBeenCalledWith('button', { name: 'Like and view the next profile' });
-      expect(mockedHumanClick).not.toHaveBeenCalled();
+      expect(humanClick).not.toHaveBeenCalled();
     });
   });
 
@@ -444,37 +466,37 @@ describe('OkCupidSite', () => {
     it('should return false if "You\'re out of people" message is visible', async () => {
       const mockLocator = {
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
-      } as any;
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockReturnValue(mockLocator); // Use mockReturnValue for consistency
+      } as Locator;
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockReturnValue(mockLocator);
 
       const result = await site.hasMoreProfiles(page);
       expect(result).toBe(false);
       expect(page.getByRole).toHaveBeenCalledWith('heading', { name: /You're out of people|No more matches/i });
-      expect(mockLocator.isVisible).toHaveBeenCalled(); // Assert isVisible was called
+      expect(mockLocator.isVisible).toHaveBeenCalled();
     });
 
     it('should return true if "You\'re out of people" message is not visible', async () => {
       const mockLocator = {
         isVisible: jest.fn<() => Promise<boolean>>().mockResolvedValue(false),
-      } as any;
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockReturnValue(mockLocator); // Use mockReturnValue for consistency
+      } as Locator;
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockReturnValue(mockLocator);
 
       const result = await site.hasMoreProfiles(page);
       expect(result).toBe(true);
       expect(page.getByRole).toHaveBeenCalledWith('heading', { name: /You're out of people|No more matches/i });
-      expect(mockLocator.isVisible).toHaveBeenCalled(); // Assert isVisible was called
+      expect(mockLocator.isVisible).toHaveBeenCalled();
     });
 
     it('should return true if an error occurs while checking for "no more profiles" message', async () => {
       const mockLocator = {
         isVisible: jest.fn<() => Promise<boolean>>().mockRejectedValue(new Error('Locator error')),
-      } as any;
-      (page.getByRole as jest.Mock<(...args: any[]) => Locator>).mockReturnValue(mockLocator); // Use mockReturnValue for consistency
+      } as Locator;
+      (page.getByRole as jest.Mock<(role: Role, options?: Parameters<Page['getByRole']>[1]) => Locator>).mockReturnValue(mockLocator);
 
       const result = await site.hasMoreProfiles(page);
       expect(result).toBe(true);
       expect(page.getByRole).toHaveBeenCalledWith('heading', { name: /You're out of people|No more matches/i });
-      expect(mockLocator.isVisible).toHaveBeenCalled(); // Assert isVisible was called
+      expect(mockLocator.isVisible).toHaveBeenCalled();
     });
   });
 });
