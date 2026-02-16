@@ -3,7 +3,7 @@
   "include": [
     "src/**/*.ts",
     "tests/**/*.ts",
-    ".eslintrc.cjs" // Include any other files ESLint needs to parse
+    ".eslintrc.cjs"
   ],
   "exclude": [
     "node_modules",
