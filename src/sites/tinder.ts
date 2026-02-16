@@ -540,13 +540,14 @@ export class TinderSite extends BaseSite {
       // Wait for card animation to complete
       await page.waitForTimeout(1000);
 
-      // Check if we hit a limit or error
+      // Check if we hit a limit or error message
+      // Look for various limit-related messages from Tinder
       const errorMessages = await page
-        .locator("text=/out of likes|limit|upgrade/i")
+        .locator("text=/out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i")
         .count();
       if (errorMessages > 0) {
         const message = await page
-          .locator("text=/out of likes|limit|upgrade/i")
+          .locator("text=/out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i")
           .first()
           .textContent();
         this.logger.warn(`Hit a limit: ${message}`);
@@ -567,11 +568,16 @@ export class TinderSite extends BaseSite {
    */
   async hasMoreProfiles(page: Page): Promise<boolean> {
     try {
-      // Check for "out of likes" or similar messages
+      // Check for "out of likes" or similar messages that indicate we can't swipe anymore
       const limitMessages = await page
-        .locator("text=/out of likes|no more|limit/i")
+        .locator("text=/out of likes|no more|limit|upgrade|refresh|try again|send as many likes/i")
         .count();
       if (limitMessages > 0) {
+        const message = await page
+          .locator("text=/out of likes|no more|limit|upgrade|refresh|try again|send as many likes/i")
+          .first()
+          .textContent();
+        this.logger.warn(`No more profiles available: ${message}`);
         return false;
       }
 
