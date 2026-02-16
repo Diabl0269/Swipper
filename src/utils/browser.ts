@@ -1,6 +1,6 @@
 import { chromium, BrowserContext } from 'playwright';
-import { BrowserConfig } from '../types.js';
-import { Logger } from './logger.js';
+import { BrowserConfig } from '../types'; // Removed .js
+import { Logger } from './logger'; // Removed .js
 import { existsSync, mkdirSync, cpSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -112,11 +112,10 @@ export class BrowserManager {
       } else {
         try {
           cpSync(srcPath, destPath, { force: true });
-        } catch (error: any) {
+        } catch (_error: unknown) {
           // Some files might be locked, skip them
-          if (error.code !== 'EBUSY' && error.code !== 'EPERM') {
-            this.logger.debug(`Could not copy ${entry.name}: ${error.message}`);
-          }
+          const errorMessage = _error instanceof Error ? _error.message : String(_error);
+          this.logger.debug(`Could not copy ${entry.name}: ${errorMessage}`);
         }
       }
     }
@@ -196,9 +195,10 @@ export class BrowserManager {
       this.logger.success('Browser initialized with Chrome profile copy');
       this.logger.info('Note: Chrome can remain open - we\'re using a copy of your profile');
       return this.context;
-    } catch (error: any) {
-      this.logger.error(`Failed to initialize browser: ${error.message}`);
-      throw error;
+    } catch (_error: unknown) {
+      const errorMessage = _error instanceof Error ? _error.message : String(_error);
+      this.logger.error(`Failed to initialize browser: ${errorMessage}`);
+      throw _error;
     }
   }
 
@@ -214,8 +214,9 @@ export class BrowserManager {
       try {
         await this.context.storageState({ path: join(profilePath, 'storage-state.json') });
         this.logger.debug('Saved browser storage state');
-      } catch (error) {
-        this.logger.debug('Could not save storage state (persistent context handles this automatically)');
+      } catch (_error: unknown) {
+        const errorMessage = _error instanceof Error ? _error.message : String(_error);
+        this.logger.debug(`Could not save storage state (persistent context handles this automatically): ${errorMessage}`);
       }
     }
   }

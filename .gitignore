@@ -5,3 +5,8 @@ browser-profile/
 .env
 .DS_Store
 
+coverage/
+tests/**/*.js
+tests/**/*.d.ts
+tests/**/*.js.map
+tests/**/*.d.ts.map
