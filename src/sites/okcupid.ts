@@ -25,8 +25,9 @@ export class OkCupidSite extends BaseSite {
       await loggedInLocator.first().waitFor({ state: 'visible', timeout: 5000 });
       this.logger.info("Logged-in indicator found, user is logged in.");
       return true;
-    } catch (e) {
-      this.logger.debug("Primary logged-in indicator not found within timeout.");
+    } catch (_e: unknown) { // Renamed e to _e
+      const errorMessage = _e instanceof Error ? _e.message : String(_e);
+      this.logger.debug(`Primary logged-in indicator not found within timeout: ${errorMessage}`);
       // 2. Secondary Check: If the primary indicator fails, check for the *absence* of logged-out indicators.
       // If there's no "Sign In" or "Join" button, we can be reasonably sure the user is logged in.
       const loggedOutLocator = page.getByRole('link', { name: /Sign In|Join OkCupid/i });
@@ -54,8 +55,9 @@ export class OkCupidSite extends BaseSite {
       await humanClick(page, acceptButton);
       // Wait for the banner to disappear
       await page.waitForTimeout(random(1500, 2500));
-    } catch (error) {
-      this.logger.debug("Cookie consent banner not found or already accepted.");
+    } catch (_error: unknown) { // Renamed error to _error
+      const errorMessage = _error instanceof Error ? _error.message : String(_error);
+      this.logger.debug(`Cookie consent banner not found or already accepted: ${errorMessage}`);
     }
     
     // The subsequent isLoggedIn check will act as the explicit wait for a usable page.
@@ -144,8 +146,9 @@ export class OkCupidSite extends BaseSite {
         }
       }
 
-    } catch (e) {
-      // It's okay if no popup is found
+    } catch (_e: unknown) { // Renamed e to _e
+      const errorMessage = _e instanceof Error ? _e.message : String(_e);
+      this.logger.debug(`No popup found to dismiss: ${errorMessage}`);
     }
     return false;
   }
@@ -167,8 +170,10 @@ export class OkCupidSite extends BaseSite {
       
       this.logger.success("Profile card action buttons are visible.");
       return true;
-    } catch (error) {
-      this.logger.error(`Error waiting for cards: ${error}`);
+    } 
+    catch (_error: unknown) { // Explicitly mark as unknown to prevent unused var error
+      const errorMessage = _error instanceof Error ? _error.message : String(_error);
+      this.logger.error(`Error waiting for cards: ${errorMessage}`);
       return false;
     }
   }
@@ -189,8 +194,9 @@ export class OkCupidSite extends BaseSite {
         this.logger.warn(`Could not find ${action} button.`);
         return false;
       }
-    } catch (error) {
-      this.logger.error(`Error during swipe action: ${error}`);
+    } catch (_error: unknown) { // Renamed error to _error
+      const errorMessage = _error instanceof Error ? _error.message : String(_error);
+      this.logger.error(`Error during swipe action: ${errorMessage}`);
       return false;
     }
   }
@@ -204,8 +210,10 @@ export class OkCupidSite extends BaseSite {
         return false;
       }
       return true;
-    } catch (error) {
+    } catch (_error: unknown) { // Renamed error to _error
+      const errorMessage = _error instanceof Error ? _error.message : String(_error);
       // If we can't find the "no more profiles" message, assume there are still profiles
+      this.logger.debug(`Error checking for more profiles (assuming more exist): ${errorMessage}`);
       return true;
     }
   }

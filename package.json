@@ -9,7 +9,8 @@
     "dev": "npm run build && node dist/index.js --debug",
     "test": "jest",
     "docgen": "typedoc",
-    "playwright:install": "playwright install chromium"
+    "playwright:install": "playwright install chromium",
+    "prepare": "husky"
   },
   "keywords": [
     "dating",
@@ -27,12 +28,14 @@
   "devDependencies": {
     "@babel/core": "^7.28.6",
     "@babel/preset-env": "^7.28.6",
+    "@playwright/test": "^1.40.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.10.0",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "babel-jest": "^30.2.0",
     "eslint": "^9.39.2",
+    "husky": "^9.1.7",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "tsx": "^4.7.0",

@@ -1,7 +1,7 @@
 import { Page } from "playwright";
 import { BaseSite } from "./base";
-import { SiteConfig } from "../types";
-import { Logger } from "../utils/logger";
+
+
 
 /**
  * The site module for Tinder.
@@ -31,8 +31,8 @@ export class TinderSite extends BaseSite {
     // Wait for navigation to complete if there's a redirect
     try {
       await page.waitForURL(/tinder\.com/, { timeout: 5000 });
-    } catch (e) {
-      // URL might already be correct, continue
+    } catch (_e) { // Renamed e to _e
+      this.logger.debug(`URL might already be correct, continuing: ${String(_e)}`);
     }
 
     this.logger.info("Page navigation complete");
@@ -52,8 +52,8 @@ export class TinderSite extends BaseSite {
     // Wait for navigation if redirected
     try {
       await page.waitForURL(/tinder\.com/, { timeout: 5000 });
-    } catch (e) {
-      // URL might already be correct
+    } catch (_e) { // Renamed e to _e
+      this.logger.debug(`URL might already be correct after refresh: ${String(_e)}`);
     }
 
     // Wait for network idle
@@ -129,16 +129,16 @@ export class TinderSite extends BaseSite {
           } else {
             this.logger.debug(`Button with selector "${selector}" not visible.`);
           }
-        } catch (e) {
-          this.logger.debug(`Error with selector "${selector}": ${e}`);
+        } catch (_e) { // Renamed e to _e
+          this.logger.debug(`Error with selector "${selector}": ${String(_e)}`);
           // Try next selector
           continue;
         }
       }
       this.logger.debug("No popup dismissed after trying all selectors.");
       return false;
-    } catch (error) {
-      this.logger.debug(`Error in dismissPopup: ${error}`);
+    } catch (_error) { // Renamed error to _error
+      this.logger.debug(`Error in dismissPopup: ${String(_error)}`);
       return false;
     }
   }
@@ -171,10 +171,9 @@ export class TinderSite extends BaseSite {
           );
           this.logger.info("Cards detected - confirmed logged in");
           return true;
-        } catch (e) {
-          // Cards might still be loading, but /app URL means we're logged in
+        } catch (_e) { // Renamed e to _e
           this.logger.debug(
-            "Cards not yet visible, but /app URL indicates logged in status"
+            `Cards not yet visible, but /app URL indicates logged in status: ${String(_e)}`
           );
           return true;
         }
@@ -244,8 +243,8 @@ export class TinderSite extends BaseSite {
       }
 
       return false;
-    } catch (error) {
-      this.logger.error(`Error checking login status: ${error}`);
+    } catch (_error) { // Renamed error to _error
+      this.logger.error(`Error checking login status: ${String(_error)}`);
       return false;
     }
   }
@@ -343,7 +342,8 @@ export class TinderSite extends BaseSite {
               }
             }
           }
-        } catch (e) {
+        } catch (_e) { // Renamed e to _e
+          this.logger.debug(`Selector ${selector} check failed: ${String(_e)}`);
           // Continue to next selector
           continue;
         }
@@ -377,9 +377,9 @@ export class TinderSite extends BaseSite {
               return true;
             }
           }
-        } catch (e) {
+        } catch (_e) { // Renamed e to _e
           // Try next selector
-          this.logger.debug(`Selector ${selector} not found, trying next...`);
+          this.logger.debug(`Selector ${selector} not found, trying next: ${String(_e)}`);
           continue;
         }
       }
@@ -420,7 +420,8 @@ export class TinderSite extends BaseSite {
                   return true;
                 }
               }
-            } catch (e) {
+            } catch (_e) { // Renamed e to _e
+              this.logger.debug(`Extended wait for selector ${selector} failed: ${String(_e)}`);
               continue;
             }
           }
@@ -466,7 +467,8 @@ export class TinderSite extends BaseSite {
                 return true;
               }
             }
-          } catch (e) {
+          } catch (_e) { // Renamed e to _e
+            this.logger.debug(`Refresh selector ${selector} check failed: ${String(_e)}`);
             continue;
           }
         }
@@ -509,8 +511,8 @@ export class TinderSite extends BaseSite {
         "Could not find profile cards after all attempts and refresh"
       );
       return false;
-    } catch (error) {
-      this.logger.error(`Error waiting for cards: ${error}`);
+    } catch (_error) { // Renamed error to _error
+      this.logger.error(`Error waiting for cards: ${String(_error)}`);
       return false;
     }
   }
@@ -555,8 +557,8 @@ export class TinderSite extends BaseSite {
       }
 
       return true;
-    } catch (error) {
-      this.logger.error(`Error performing swipe: ${error}`);
+    } catch (_error) { // Renamed error to _error
+      this.logger.error(`Error performing swipe: ${String(_error)}`);
       return false;
     }
   }
@@ -586,8 +588,8 @@ export class TinderSite extends BaseSite {
         .locator('[data-testid="card"], [class*="Card"]')
         .count();
       return cards > 0;
-    } catch (error) {
-      this.logger.error(`Error checking for more profiles: ${error}`);
+    } catch (_error) { // Renamed error to _error
+      this.logger.error(`Error checking for more profiles: ${String(_error)}`);
       return false;
     }
   }
