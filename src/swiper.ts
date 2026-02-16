@@ -1,11 +1,9 @@
-import { Page } from 'playwright';
 import { writeFileSync } from 'fs';
-import { BrowserManager } from './utils/browser.js';
-import { SiteModule } from './sites/base.js';
-import { RateLimiter } from './utils/rateLimiter.js';
-import { Logger } from './utils/logger.js';
-import { SiteConfig } from './types.js';
-import { TinderSite } from './sites/tinder.js';
+import { BrowserManager } from './utils/browser'; // Removed .js
+import { SiteModule } from './sites/base'; // Removed .js
+import { RateLimiter } from './utils/rateLimiter'; // Removed .js
+import { Logger } from './utils/logger'; // Removed .js
+import { SiteConfig } from './types'; // Removed .js
 
 /**
  * Statistics for a swiping session.
@@ -165,8 +163,9 @@ export class Swiper {
       this.printStats();
 
       return this.stats;
-    } catch (error) {
-      this.logger.error(`Error during swiping: ${error}`);
+    } catch (_error: unknown) { // Add unknown type assertion
+      const errorMessage = _error instanceof Error ? _error.message : String(_error);
+      this.logger.error(`Error during swiping: ${errorMessage}`);
       
       // Take a snapshot and screenshot on error for debugging
       if (page && !page.isClosed()) {
@@ -181,12 +180,13 @@ export class Swiper {
           const html = await page.content();
           writeFileSync(htmlPath, html);
           this.logger.info(`Saved error page HTML to: ${htmlPath}`);
-        } catch (snapshotError) {
-          this.logger.error(`Failed to take snapshot/screenshot: ${snapshotError}`);
+        } catch (_snapshotError: unknown) { // Add unknown type assertion
+          const snapshotErrorMessage = _snapshotError instanceof Error ? _snapshotError.message : String(_snapshotError);
+          this.logger.error(`Failed to take snapshot/screenshot: ${snapshotErrorMessage}`);
         }
       }
 
-      throw error;
+      throw _error;
     } finally {
       await page.close();
       await this.browserManager.saveStorageState();
