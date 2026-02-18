@@ -640,7 +640,7 @@ describe('TinderSite', () => {
 
       const result = await site.swipe(mockPage, 'like');
       expect(result).toBe(false);
-      expect(mockPage.locator).toHaveBeenCalledWith('text=/out of likes|limit|upgrade/i');
+      expect(mockPage.locator).toHaveBeenCalledWith('text=/out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i');
     });
 
     it('should return false if an error occurs during the swipe action', async () => {
@@ -662,7 +662,7 @@ describe('TinderSite', () => {
 
       const result = await site.hasMoreProfiles(mockPage);
       expect(result).toBe(false);
-      expect(mockPage.locator).toHaveBeenCalledWith('text=/out of likes|no more|limit/i');
+      expect(mockPage.locator).toHaveBeenCalledWith('text=/out of likes|no more|limit|upgrade|refresh|try again|send as many likes/i');
     });
 
     it('should return true if cards are present and no limit message', async () => {
