@@ -6,7 +6,7 @@ This plan outlines the tasks required to refactor Swiper to support running mult
 -   [x] **Task:** Update CLI argument parsing in `src/index.ts`. [a40bbd8]
     -   [x] Modify the `site` option to accept a comma-separated string of site names.
     -   [x] Add logic to handle the special keyword `all`, which should resolve to all sites enabled in the configuration.
--   [x] **Task:** Refactor configuration loading in `src/config.ts`.
+-   [x] **Task:** Refactor configuration loading in `src/config.ts`. [1bd6bcb]
     -   [x] Create a new method `getSiteConfigs(siteNames: string[]): SiteConfig[]` that returns an array of configurations for the requested sites.
     -   [x] Ensure `getAllSites` correctly returns all *enabled* sites for the `all` keyword functionality.
 -   [ ] **Task:** Implement prefixed logging in `src/utils/logger.ts`.
