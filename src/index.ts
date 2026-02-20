@@ -5,7 +5,7 @@ import { Config } from "./config.js";
 import { BrowserManager } from "./utils/browser.js";
 import { Logger, LogLevel } from "./utils/logger.js";
 import { RateLimiter } from "./utils/rateLimiter.js";
-import { Swiper } from "./swiper.js";
+import { Swiper, SwiperStats } from "./swiper.js";
 import { TinderSite } from "./sites/tinder.js";
 import { OkCupidSite } from "./sites/okcupid.js";
 
@@ -31,14 +31,14 @@ program
   .option("--headless", "Run browser in headless mode", false)
   .action(async (options) => {
     try {
-      // Initialize logger
+      // Initialize logger (main logger)
       let logLevel = LogLevel.INFO;
       if (options.debug) {
         logLevel = LogLevel.DEBUG;
       }
-      const logger = new Logger(logLevel);
+      const mainLogger = new Logger(logLevel);
 
-      logger.info("Starting Swiper...");
+      mainLogger.info("Starting Swiper...");
 
       // Load configuration
       const config = new Config(options.config);
@@ -49,84 +49,108 @@ program
         browserConfig.headless = options.headless;
       }
 
-      // Get site configurations
-      let siteNames: string[];
+      // Determine site names to run
+      let siteNamesToRun: string[];
       if (options.site.includes("all")) {
-        siteNames = config.getAllSites();
-        if (siteNames.length === 0) {
-          logger.error("No sites are enabled in the configuration.");
+        siteNamesToRun = config.getAllSites();
+        if (siteNamesToRun.length === 0) {
+          mainLogger.error("No sites are enabled in the configuration.");
           process.exit(1);
         }
       } else {
-        siteNames = options.site.map((s: string) => s.toLowerCase());
+        siteNamesToRun = options.site.map((s: string) => s.toLowerCase());
       }
 
-      const siteConfigs = config.getSiteConfigs(siteNames);
+      const siteConfigsToRun = config.getSiteConfigs(siteNamesToRun);
 
-      if (siteConfigs.length === 0) {
-        logger.error(
-          `None of the specified sites are enabled or found in configuration: ${siteNames.join(
+      if (siteConfigsToRun.length === 0) {
+        mainLogger.error(
+          `None of the specified sites are enabled or found in configuration: ${siteNamesToRun.join(
             ", "
           )}`
         );
-        logger.info(`Available sites: ${config.getAllSites().join(", ")}`);
+        mainLogger.info(`Available sites: ${config.getAllSites().join(", ")}`);
         process.exit(1);
       }
 
-      // If site-specific debugMode is enabled, override the global debug level
-      if (siteConfig.debugMode) {
-        logger.setLogLevel(LogLevel.DEBUG);
-        logger.debug(`Site-specific debug mode enabled for ${siteName}.`);
+      const swiperPromises: Promise<SwiperStats>[] = [];
+      const browserManagers: BrowserManager[] = [];
+
+      for (const siteConfig of siteConfigsToRun) {
+        const siteName = Object.keys(config.config.sites).find(key => config.config.sites[key] === siteConfig); // Infer site name from config
+        if (!siteName) {
+          mainLogger.error(`Could not determine site name for config: ${JSON.stringify(siteConfig)}`);
+          continue;
+        }
+        
+        // If site-specific debugMode is enabled, override the global debug level for this site's logger
+        const siteLogger = mainLogger.withPrefix(siteName);
+        if (siteConfig.debugMode) {
+          siteLogger.setLogLevel(LogLevel.DEBUG);
+          siteLogger.debug(`Site-specific debug mode enabled for ${siteName}.`);
+        }
+
+        // Initialize browser (for now, each swiper gets its own)
+        const browserManager = new BrowserManager(browserConfig, siteLogger);
+        browserManagers.push(browserManager);
+
+        // Initialize site module
+        let siteModule;
+        switch (siteName) {
+          case "tinder":
+            siteModule = new TinderSite(siteConfig, siteLogger);
+            break;
+          case "okcupid":
+            siteModule = new OkCupidSite(siteConfig, siteLogger);
+            break;
+          default:
+            siteLogger.error(`Unsupported site: ${siteName}`);
+            continue; // Skip this site
+        }
+
+        // Initialize rate limiter
+        const rateLimiter = new RateLimiter(siteConfig, siteLogger);
+
+        // Initialize swiper
+        const swiper = new Swiper(
+          browserManager,
+          siteModule,
+          rateLimiter,
+          siteLogger,
+          siteConfig
+        );
+        swiperPromises.push(swiper.run());
       }
 
-      // Initialize browser
-      const browserManager = new BrowserManager(browserConfig, logger);
-      await browserManager.initialize();
-
-      // Initialize site module
-      let siteModule;
-      switch (siteName) {
-        case "tinder":
-          siteModule = new TinderSite(siteConfig, logger);
-          break;
-        case "okcupid":
-          siteModule = new OkCupidSite(siteConfig, logger);
-          break;
-        default:
-          logger.error(`Unsupported site: ${siteName}`);
-          await browserManager.close();
-          process.exit(1);
-      }
-
-      // Initialize rate limiter
-      const rateLimiter = new RateLimiter(siteConfig, logger);
-
-      // Initialize swiper
-      const swiper = new Swiper(
-        browserManager,
-        siteModule,
-        rateLimiter,
-        logger,
-        siteConfig
-      );
-
-      // Handle graceful shutdown
+      // Handle graceful shutdown for all browser managers
       const shutdown = async () => {
-        logger.info("\nShutting down gracefully...");
-        await browserManager.close();
+        mainLogger.info("\nShutting down gracefully...");
+        for (const bm of browserManagers) {
+          await bm.close();
+        }
         process.exit(0);
       };
 
       process.on("SIGINT", shutdown);
       process.on("SIGTERM", shutdown);
 
-      // Run swiper
-      await swiper.run();
+      // Run all swipers concurrently
+      const results = await Promise.allSettled(swiperPromises);
 
-      // Close browser
-      await browserManager.close();
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          mainLogger.success(`A site finished successfully.`);
+        } else {
+          mainLogger.error(`A site failed: ${result.reason}`);
+        }
+      }
 
-      logger.success("Done!");
+      // Close all browsers
+      for (const bm of browserManagers) {
+        await bm.close();
+      }
+
+      mainLogger.success("All swiping sessions completed!");
       process.exit(0);
     } catch (error) {
       console.error("Fatal error:", error);

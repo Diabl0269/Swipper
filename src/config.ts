@@ -117,7 +117,7 @@ export class Config {
     if (!siteConfig || !siteConfig.enabled) {
       return null;
     }
-    return siteConfig;
+    return { ...siteConfig, name: siteName }; // Deep copy and add name
   }
 
   /**
@@ -130,7 +130,7 @@ export class Config {
     for (const siteName of siteNames) {
       const siteConfig = this.getSiteConfig(siteName);
       if (siteConfig) {
-        configs.push(siteConfig);
+        configs.push({ ...siteConfig, name: siteName }); // Add name to the config
       }
     }
     return configs;

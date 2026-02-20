@@ -12,6 +12,8 @@ export interface SwipeDelay {
  * Configuration for a specific dating site.
  */
 export interface SiteConfig {
+  /** The name of the site. */
+  name?: string;
   /** Whether the bot is enabled for this site. */
   enabled: boolean;
   /** The probability of liking a profile (0.0 to 1.0). */
