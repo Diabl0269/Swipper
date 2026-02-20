@@ -3,7 +3,7 @@
 This plan outlines the tasks required to refactor Swiper to support running multiple site modules concurrently.
 
 ## Phase 1: Foundation and Configuration Updates
--   [x] **Task:** Update CLI argument parsing in `src/index.ts`.
+-   [x] **Task:** Update CLI argument parsing in `src/index.ts`. [a40bbd8]
     -   [x] Modify the `site` option to accept a comma-separated string of site names.
     -   [x] Add logic to handle the special keyword `all`, which should resolve to all sites enabled in the configuration.
 -   [ ] **Task:** Refactor configuration loading in `src/config.ts`.
