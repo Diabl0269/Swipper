@@ -21,16 +21,16 @@ This plan outlines the tasks required to refactor Swiper to support running mult
     -   [x] Create a new method `newContext(options?: BrowserNewContextOptions): Promise<BrowserContext>` that creates and returns a new `BrowserContext` from the main browser instance.
     -   [x] Update the `close` method to close the main `Browser` instance.
     -   [x] The `getContext` method can be deprecated or changed to return the first/main context if needed, but the new `newContext` method will be primary.
--   [ ] **Task:** Update the main application entrypoint in `src/index.ts`.
-    -   [ ] After parsing site names, loop through them.
-    -   [ ] For each site, create a new `BrowserContext` using the updated `BrowserManager`.
-    -   [ ] For each site, create a prefixed `Logger` instance.
-    -   [ ] For each site, create and configure its own `SiteModule`, `RateLimiter`, and `Swiper` instance.
-    -   [ ] Collect all `swiper.run()` promises.
--   [ ] **Task:** Implement the parallel execution logic in `src/index.ts`.
-    -   [ ] Use `Promise.allSettled` to run all the `swiper.run()` promises concurrently.
-    -   [ ] After all promises have settled, log the results for each site (e.g., "Tinder finished successfully", "OkCupid failed: ...").
-    -   [ ] Ensure the main `shutdown` function correctly closes the main `Browser` instance.
+-   [x] **Task:** Update the main application entrypoint in `src/index.ts`. [5091662]
+    -   [x] After parsing site names, loop through them.
+    -   [x] For each site, create a new `BrowserContext` using the updated `BrowserManager`.
+    -   [x] For each site, create a prefixed `Logger` instance.
+    -   [x] For each site, create and configure its own `SiteModule`, `RateLimiter`, and `Swiper` instance.
+    -   [x] Collect all `swiper.run()` promises.
+-   [x] **Task:** Implement the parallel execution logic in `src/index.ts`. [5091662]
+    -   [x] Use `Promise.allSettled` to run all the `swiper.run()` promises concurrently.
+    -   [x] After all promises have settled, log the results for each site (e.g., "Tinder finished successfully", "OkCupid failed: ...").
+    -   [x] Ensure the main `shutdown` function correctly closes the main `Browser` instance.
 -   [ ] **Task:** Conductor - User Manual Verification 'Architectural Refactoring for Concurrency' (Protocol in workflow.md)
 
 ## Phase 3: Finalization and Testing
