@@ -16,7 +16,7 @@ This plan outlines the tasks required to refactor Swiper to support running mult
 -   [x] **Task:** Conductor - User Manual Verification 'Foundation and Configuration Updates' (Protocol in workflow.md) [d8a0823]
 
 ## Phase 2: Architectural Refactoring for Concurrency
--   [x] **Task:** Refactor `BrowserManager` for multi-context support in `src/utils/browser.ts`.
+-   [x] **Task:** Refactor `BrowserManager` for multi-context support in `src/utils/browser.ts`. [a3dc73b]
     -   [x] Modify the `initialize` method to launch a `Browser` instance instead of a `BrowserContext`. Store it as `this.browser`.
     -   [x] Create a new method `newContext(options?: BrowserNewContextOptions): Promise<BrowserContext>` that creates and returns a new `BrowserContext` from the main browser instance.
     -   [x] Update the `close` method to close the main `Browser` instance.
