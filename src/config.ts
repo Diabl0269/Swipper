@@ -121,6 +121,22 @@ export class Config {
   }
 
   /**
+   * Gets a list of configurations for multiple specified sites.
+   * @param siteNames - An array of site names to retrieve configurations for.
+   * @returns An array of SiteConfig objects for the specified and enabled sites.
+   */
+  getSiteConfigs(siteNames: string[]): SiteConfig[] {
+    const configs: SiteConfig[] = [];
+    for (const siteName of siteNames) {
+      const siteConfig = this.getSiteConfig(siteName);
+      if (siteConfig) {
+        configs.push(siteConfig);
+      }
+    }
+    return configs;
+  }
+
+  /**
    * Gets the browser configuration.
    * @returns The browser configuration.
    */
