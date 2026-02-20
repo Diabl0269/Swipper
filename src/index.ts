@@ -16,7 +16,17 @@ program
   .description("Automated swiping bot for dating apps")
   .version("1.0.0")
   .option("-c, --config <path>", "Path to config file", "config.json")
-  .option("-s, --site <site>", "Dating site to use", "tinder")
+  .option(
+    "-s, --site <site...>",
+    "Dating site(s) to use (comma-separated or 'all')",
+    (value, previous) => {
+      if (previous) {
+        return previous.concat(value.split(","));
+      }
+      return value.split(",");
+    },
+    ["tinder"]
+  )
   .option("-d, --debug", "Enable debug logging", false)
   .option("--headless", "Run browser in headless mode", false)
   .action(async (options) => {
@@ -39,13 +49,25 @@ program
         browserConfig.headless = options.headless;
       }
 
-      // Get site configuration
-      const siteName = options.site.toLowerCase();
-      const siteConfig = config.getSiteConfig(siteName);
+      // Get site configurations
+      let siteNames: string[];
+      if (options.site.includes("all")) {
+        siteNames = config.getAllSites();
+        if (siteNames.length === 0) {
+          logger.error("No sites are enabled in the configuration.");
+          process.exit(1);
+        }
+      } else {
+        siteNames = options.site.map((s: string) => s.toLowerCase());
+      }
 
-      if (!siteConfig) {
+      const siteConfigs = config.getSiteConfigs(siteNames);
+
+      if (siteConfigs.length === 0) {
         logger.error(
-          `Site "${siteName}" is not enabled or not found in configuration`
+          `None of the specified sites are enabled or found in configuration: ${siteNames.join(
+            ", "
+          )}`
         );
         logger.info(`Available sites: ${config.getAllSites().join(", ")}`);
         process.exit(1);
