@@ -34,8 +34,8 @@ This plan outlines the tasks required to refactor Swiper to support running mult
 -   [x] **Task:** Conductor - User Manual Verification 'Architectural Refactoring for Concurrency' (Protocol in workflow.md) [ff1f19a]
 
 ## Phase 3: Finalization and Testing
--   [ ] **Task:** Update `src/swiper.ts` to use the prefixed logger.
-    -   [ ] No major changes are expected here if the `Logger` is passed in correctly, but verify all log messages are correctly prefixed during execution.
+-   [x] **Task:** Update `src/swiper.ts` to use the prefixed logger.
+    -   [x] No major changes are expected here if the `Logger` is passed in correctly, but verify all log messages are correctly prefixed during execution.
 -   [ ] **Task:** Write tests for the new parallel execution logic.
     -   [ ] Add a test to `tests/sites/` (or a new test file) to verify that two mock sites can run in parallel.
     -   [ ] Verify that CLI parsing for `all` and comma-separated lists works as expected.
