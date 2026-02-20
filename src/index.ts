@@ -73,26 +73,23 @@ program
         process.exit(1);
       }
 
+      // Initialize a single browser manager instance
+      const mainBrowserManager = new BrowserManager(browserConfig, mainLogger);
+      await mainBrowserManager.initialize();
+
       const swiperPromises: Promise<SwiperStats>[] = [];
-      const browserManagers: BrowserManager[] = [];
 
       for (const siteConfig of siteConfigsToRun) {
-        const siteName = Object.keys(config.config.sites).find(key => config.config.sites[key] === siteConfig); // Infer site name from config
-        if (!siteName) {
-          mainLogger.error(`Could not determine site name for config: ${JSON.stringify(siteConfig)}`);
-          continue;
-        }
+        const siteName = siteConfig.name as string;
         
-        // If site-specific debugMode is enabled, override the global debug level for this site's logger
         const siteLogger = mainLogger.withPrefix(siteName);
         if (siteConfig.debugMode) {
           siteLogger.setLogLevel(LogLevel.DEBUG);
           siteLogger.debug(`Site-specific debug mode enabled for ${siteName}.`);
         }
 
-        // Initialize browser (for now, each swiper gets its own)
-        const browserManager = new BrowserManager(browserConfig, siteLogger);
-        browserManagers.push(browserManager);
+        // Create a new browser context for each site
+        const browserContext = await mainBrowserManager.newContext();
 
         // Initialize site module
         let siteModule;
@@ -105,6 +102,7 @@ program
             break;
           default:
             siteLogger.error(`Unsupported site: ${siteName}`);
+            await browserContext.close(); // Close context for unsupported site
             continue; // Skip this site
         }
 
@@ -113,7 +111,7 @@ program
 
         // Initialize swiper
         const swiper = new Swiper(
-          browserManager,
+          browserContext, // Pass context directly
           siteModule,
           rateLimiter,
           siteLogger,
@@ -122,12 +120,10 @@ program
         swiperPromises.push(swiper.run());
       }
 
-      // Handle graceful shutdown for all browser managers
+      // Handle graceful shutdown
       const shutdown = async () => {
         mainLogger.info("\nShutting down gracefully...");
-        for (const bm of browserManagers) {
-          await bm.close();
-        }
+        await mainBrowserManager.close(); // Close the single browser manager
         process.exit(0);
       };
 
@@ -145,10 +141,8 @@ program
         }
       }
 
-      // Close all browsers
-      for (const bm of browserManagers) {
-        await bm.close();
-      }
+      // Close the main browser manager after all swipers are done
+      await mainBrowserManager.close();
 
       mainLogger.success("All swiping sessions completed!");
       process.exit(0);

@@ -1,9 +1,9 @@
 import { writeFileSync } from 'fs';
-import { BrowserManager } from './utils/browser'; // Removed .js
-import { SiteModule } from './sites/base'; // Removed .js
-import { RateLimiter } from './utils/rateLimiter'; // Removed .js
-import { Logger } from './utils/logger'; // Removed .js
-import { SiteConfig } from './types'; // Removed .js
+import { BrowserContext } from 'playwright'; // Import BrowserContext
+import { SiteModule } from './sites/base';
+import { RateLimiter } from './utils/rateLimiter';
+import { Logger } from './utils/logger';
+import { SiteConfig } from './types';
 
 /**
  * Statistics for a swiping session.
@@ -23,7 +23,7 @@ export interface SwiperStats {
  * The core class for managing the swiping process.
  */
 export class Swiper {
-  private browserManager: BrowserManager;
+  private browserContext: BrowserContext; // Changed from browserManager
   private siteModule: SiteModule;
   private rateLimiter: RateLimiter;
   private logger: Logger;
@@ -32,20 +32,20 @@ export class Swiper {
 
   /**
    * Creates an instance of Swiper.
-   * @param browserManager - The browser manager instance.
+   * @param browserContext - The Playwright browser context for this swiping session.
    * @param siteModule - The site module for the target dating site.
    * @param rateLimiter - The rate limiter instance.
    * @param logger - The logger instance.
    * @param config - The configuration for the target site.
    */
   constructor(
-    browserManager: BrowserManager,
+    browserContext: BrowserContext, // Changed from browserManager
     siteModule: SiteModule,
     rateLimiter: RateLimiter,
     logger: Logger,
     config: SiteConfig
   ) {
-    this.browserManager = browserManager;
+    this.browserContext = browserContext; // Changed from browserManager
     this.siteModule = siteModule;
     this.rateLimiter = rateLimiter;
     this.logger = logger;
@@ -63,10 +63,7 @@ export class Swiper {
    * @returns A promise that resolves with the session statistics.
    */
   async run(): Promise<SwiperStats> {
-    const context = this.browserManager.getContext();
-    if (!context) {
-      throw new Error('Browser context not initialized');
-    }
+    const context = this.browserContext; // Use the context directly
 
     const page = await context.newPage();
 
@@ -189,7 +186,7 @@ export class Swiper {
       throw _error;
     } finally {
       await page.close();
-      await this.browserManager.saveStorageState();
+      // saveStorageState is handled by the BrowserManager externally
     }
   }
 
