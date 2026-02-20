@@ -1,4 +1,4 @@
-import { chromium, BrowserContext, Browser, BrowserNewContextOptions } from 'playwright';
+import { chromium, BrowserContext, Browser, BrowserContextOptions } from 'playwright';
 import { BrowserConfig } from '../types';
 import { Logger } from './logger';
 import { existsSync, mkdirSync, cpSync, readdirSync } from 'fs';
@@ -204,7 +204,7 @@ export class BrowserManager {
    * @param options - Options for the new browser context.
    * @returns A promise that resolves with the new browser context.
    */
-  async newContext(options?: BrowserNewContextOptions): Promise<BrowserContext> {
+  async newContext(options?: BrowserContextOptions): Promise<BrowserContext> {
     if (!this.browser) {
       throw new Error('Browser not initialized. Call initialize() first.');
     }
