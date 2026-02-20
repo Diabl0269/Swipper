@@ -9,7 +9,7 @@ This plan outlines the tasks required to refactor Swiper to support running mult
 -   [x] **Task:** Refactor configuration loading in `src/config.ts`. [1bd6bcb]
     -   [x] Create a new method `getSiteConfigs(siteNames: string[]): SiteConfig[]` that returns an array of configurations for the requested sites.
     -   [x] Ensure `getAllSites` correctly returns all *enabled* sites for the `all` keyword functionality.
--   [x] **Task:** Implement prefixed logging in `src/utils/logger.ts`.
+-   [x] **Task:** Implement prefixed logging in `src/utils/logger.ts`. [e29c687]
     -   [x] Add a `prefix` property to the `Logger` class.
     -   [x] Add a `withPrefix(prefix: string): Logger` method that returns a new `Logger` instance with the specified prefix.
     -   [x] Update the `formatMessage` method to include the prefix if it exists (e.g., `[Tinder] [INFO] Message...`).
