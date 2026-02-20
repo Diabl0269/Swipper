@@ -16,11 +16,11 @@ This plan outlines the tasks required to refactor Swiper to support running mult
 -   [x] **Task:** Conductor - User Manual Verification 'Foundation and Configuration Updates' (Protocol in workflow.md) [d8a0823]
 
 ## Phase 2: Architectural Refactoring for Concurrency
--   [ ] **Task:** Refactor `BrowserManager` for multi-context support in `src/utils/browser.ts`.
-    -   [ ] Modify the `initialize` method to launch a `Browser` instance instead of a `BrowserContext`. Store it as `this.browser`.
-    -   [ ] Create a new method `newContext(options?: BrowserNewContextOptions): Promise<BrowserContext>` that creates and returns a new `BrowserContext` from the main browser instance.
-    -   [ ] Update the `close` method to close the main `Browser` instance.
-    -   [ ] The `getContext` method can be deprecated or changed to return the first/main context if needed, but the new `newContext` method will be primary.
+-   [x] **Task:** Refactor `BrowserManager` for multi-context support in `src/utils/browser.ts`.
+    -   [x] Modify the `initialize` method to launch a `Browser` instance instead of a `BrowserContext`. Store it as `this.browser`.
+    -   [x] Create a new method `newContext(options?: BrowserNewContextOptions): Promise<BrowserContext>` that creates and returns a new `BrowserContext` from the main browser instance.
+    -   [x] Update the `close` method to close the main `Browser` instance.
+    -   [x] The `getContext` method can be deprecated or changed to return the first/main context if needed, but the new `newContext` method will be primary.
 -   [ ] **Task:** Update the main application entrypoint in `src/index.ts`.
     -   [ ] After parsing site names, loop through them.
     -   [ ] For each site, create a new `BrowserContext` using the updated `BrowserManager`.

@@ -1,6 +1,6 @@
-import { chromium, BrowserContext } from 'playwright';
-import { BrowserConfig } from '../types'; // Removed .js
-import { Logger } from './logger'; // Removed .js
+import { chromium, BrowserContext, Browser, BrowserNewContextOptions } from 'playwright';
+import { BrowserConfig } from '../types';
+import { Logger } from './logger';
 import { existsSync, mkdirSync, cpSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -11,8 +11,9 @@ import { homedir } from 'os';
 export class BrowserManager {
   private config: BrowserConfig;
   private logger: Logger;
-  private context: BrowserContext | null = null;
+  private browser: Browser | null = null; // Changed from context to browser
   private copiedProfilePath: string | null = null;
+  private mainPersistentContext: BrowserContext | null = null; // To handle the primary storage state
 
   /**
    * Creates an instance of BrowserManager.
@@ -136,7 +137,6 @@ export class BrowserManager {
     this.logger.info('Copying Chrome profile (this may take a moment)...');
 
     // Create User Data directory structure
-    // launchPersistentContext expects: userDataDir/Default/...
     const userDataDir = join(process.cwd(), this.config.profilePath, 'chrome-profile-copy');
     const defaultProfileCopy = join(userDataDir, 'Default');
     
@@ -155,11 +155,11 @@ export class BrowserManager {
   }
 
   /**
-   * Initializes the browser context.
-   * @returns A promise that resolves with the browser context.
+   * Initializes the browser instance.
+   * @returns A promise that resolves when the browser is launched.
    */
-  async initialize(): Promise<BrowserContext> {
-    this.logger.info('Initializing browser with Chrome profile...');
+  async initialize(): Promise<void> {
+    this.logger.info('Initializing browser instance...');
 
     // Use custom profile path if specified, otherwise copy Chrome's profile
     let userDataDir: string;
@@ -175,26 +175,23 @@ export class BrowserManager {
       userDataDir = this.copyChromeProfile();
     }
 
-    // Use Chrome (not Chromium) with the copied profile
-    // Chrome can stay open since we're using a copy
     try {
-      this.context = await chromium.launchPersistentContext(userDataDir, {
+      this.mainPersistentContext = await chromium.launchPersistentContext(userDataDir, {
         headless: this.config.headless,
-        channel: 'chrome', // Use Chrome instead of Chromium
+        channel: 'chrome',
         viewport: { width: 1280, height: 720 },
-        // Don't override userAgent - use Chrome's default
       });
+      this.browser = this.mainPersistentContext.browser(); // Get the browser instance from the persistent context
 
-      // Hide the fact that we are using a web driver
-      await this.context.addInitScript(() => {
+      // Hide the fact that we are using a web driver for the main context
+      await this.mainPersistentContext.addInitScript(() => {
         Object.defineProperty(navigator, 'webdriver', {
           get: () => false,
         });
       });
 
-      this.logger.success('Browser initialized with Chrome profile copy');
+      this.logger.success('Browser instance initialized with Chrome profile copy');
       this.logger.info('Note: Chrome can remain open - we\'re using a copy of your profile');
-      return this.context;
     } catch (_error: unknown) {
       const errorMessage = _error instanceof Error ? _error.message : String(_error);
       this.logger.error(`Failed to initialize browser: ${errorMessage}`);
@@ -203,40 +200,65 @@ export class BrowserManager {
   }
 
   /**
-   * Saves the browser's storage state to a file.
+   * Creates a new browser context.
+   * @param options - Options for the new browser context.
+   * @returns A promise that resolves with the new browser context.
    */
-  async saveStorageState(): Promise<void> {
-    if (this.context) {
+  async newContext(options?: BrowserNewContextOptions): Promise<BrowserContext> {
+    if (!this.browser) {
+      throw new Error('Browser not initialized. Call initialize() first.');
+    }
+    const context = await this.browser.newContext(options);
+    // Hide the fact that we are using a web driver for this new context
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => false,
+      });
+    });
+    return context;
+  }
+
+  /**
+   * Saves the storage state of a given browser context to a file.
+   * This is primarily for the main persistent context, or if individual contexts need saving.
+   * @param context - The browser context whose state to save.
+   */
+  async saveStorageState(context?: BrowserContext): Promise<void> {
+    const contextToSave = context || this.mainPersistentContext;
+    if (contextToSave) {
       const profilePath = join(process.cwd(), this.config.profilePath);
       if (!existsSync(profilePath)) {
         mkdirSync(profilePath, { recursive: true });
       }
       try {
-        await this.context.storageState({ path: join(profilePath, 'storage-state.json') });
+        await contextToSave.storageState({ path: join(profilePath, 'storage-state.json') });
         this.logger.debug('Saved browser storage state');
       } catch (_error: unknown) {
         const errorMessage = _error instanceof Error ? _error.message : String(_error);
-        this.logger.debug(`Could not save storage state (persistent context handles this automatically): ${errorMessage}`);
+        this.logger.debug(`Could not save storage state: ${errorMessage}`);
       }
     }
   }
 
   /**
-   * Closes the browser context.
+   * Closes the browser instance and all its contexts.
    */
   async close(): Promise<void> {
-    if (this.context) {
-      await this.saveStorageState();
-      await this.context.close();
+    if (this.mainPersistentContext) {
+      await this.saveStorageState(this.mainPersistentContext);
+      await this.mainPersistentContext.close();
+    }
+    if (this.browser) {
+        await this.browser.close();
     }
     this.logger.info('Browser closed');
   }
 
   /**
-   * Gets the browser context.
-   * @returns The browser context, or null if not initialized.
+   * Gets the main persistent browser context.
+   * @returns The main persistent browser context, or null if not initialized.
    */
   getContext(): BrowserContext | null {
-    return this.context;
+    return this.mainPersistentContext;
   }
 }
