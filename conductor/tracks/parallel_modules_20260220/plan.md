@@ -31,7 +31,7 @@ This plan outlines the tasks required to refactor Swiper to support running mult
     -   [x] Use `Promise.allSettled` to run all the `swiper.run()` promises concurrently.
     -   [x] After all promises have settled, log the results for each site (e.g., "Tinder finished successfully", "OkCupid failed: ...").
     -   [x] Ensure the main `shutdown` function correctly closes the main `Browser` instance.
--   [ ] **Task:** Conductor - User Manual Verification 'Architectural Refactoring for Concurrency' (Protocol in workflow.md)
+-   [~] **Task:** Conductor - User Manual Verification 'Architectural Refactoring for Concurrency' (Protocol in workflow.md)
 
 ## Phase 3: Finalization and Testing
 -   [ ] **Task:** Update `src/swiper.ts` to use the prefixed logger.
