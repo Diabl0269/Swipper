@@ -192,6 +192,13 @@ export class BrowserManager {
 
       this.logger.success('Browser instance initialized with Chrome profile copy');
       this.logger.info('Note: Chrome can remain open - we\'re using a copy of your profile');
+
+      // WARM UP: Navigate to a blank page and wait a moment to ensure profile is loaded
+      const page = await this.mainPersistentContext.newPage();
+      await page.goto('about:blank');
+      await page.waitForTimeout(2000);
+      await page.close();
+
     } catch (_error: unknown) {
       const errorMessage = _error instanceof Error ? _error.message : String(_error);
       this.logger.error(`Failed to initialize browser: ${errorMessage}`);
@@ -260,5 +267,16 @@ export class BrowserManager {
    */
   getContext(): BrowserContext | null {
     return this.mainPersistentContext;
+  }
+
+  /**
+   * Gets the current storage state from the main context.
+   * @returns The storage state object.
+   */
+  async getStorageState(): Promise<unknown> {
+    if (!this.mainPersistentContext) {
+      throw new Error('Browser not initialized. Call initialize() first.');
+    }
+    return await this.mainPersistentContext.storageState();
   }
 }

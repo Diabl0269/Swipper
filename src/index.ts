@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { Config } from "./config.js";
-import { BrowserManager } from "./utils/browser.js";
-import { Logger, LogLevel } from "./utils/logger.js";
-import { RateLimiter } from "./utils/rateLimiter.js";
-import { Swiper, SwiperStats } from "./swiper.js";
-import { TinderSite } from "./sites/tinder.js";
-import { OkCupidSite } from "./sites/okcupid.js";
+import { Config } from "./config";
+import { BrowserManager } from "./utils/browser";
+import { Logger, LogLevel } from "./utils/logger";
+import { RateLimiter } from "./utils/rateLimiter";
+import { Swiper, SwiperStats } from "./swiper";
+import { TinderSite } from "./sites/tinder";
+import { OkCupidSite } from "./sites/okcupid";
+
+interface CliOptions {
+  config?: string;
+  site: string[];
+  debug: boolean;
+  headless: boolean;
+}
 
 const program = new Command();
 
@@ -20,6 +27,10 @@ program
     "-s, --site <site...>",
     "Dating site(s) to use (comma-separated or 'all')",
     (value, previous) => {
+      // If the current value is the default ["tinder"], replace it
+      if (previous && previous.length === 1 && previous[0] === "tinder" && value !== "tinder") {
+        return value.split(",");
+      }
       if (previous) {
         return previous.concat(value.split(","));
       }
@@ -28,8 +39,18 @@ program
     ["tinder"]
   )
   .option("-d, --debug", "Enable debug logging", false)
-  .option("--headless", "Run browser in headless mode", false)
-  .action(async (options) => {
+  .option("--headless", "Run browser in headless mode", false);
+
+export class ProcessExitError extends Error {
+  code: number;
+  constructor(code: number) {
+    super(`Process exited with code: ${code}`);
+    this.code = code;
+    this.name = "ProcessExitError";
+  }
+}
+
+const mainAction = async (options: CliOptions) => { // Define the action function separately
     try {
       // Initialize logger (main logger)
       let logLevel = LogLevel.INFO;
@@ -55,7 +76,7 @@ program
         siteNamesToRun = config.getAllSites();
         if (siteNamesToRun.length === 0) {
           mainLogger.error("No sites are enabled in the configuration.");
-          process.exit(1);
+          throw new ProcessExitError(1);
         }
       } else {
         siteNamesToRun = options.site.map((s: string) => s.toLowerCase());
@@ -70,12 +91,18 @@ program
           )}`
         );
         mainLogger.info(`Available sites: ${config.getAllSites().join(", ")}`);
-        process.exit(1);
+        throw new ProcessExitError(1);
       }
 
       // Initialize a single browser manager instance
       const mainBrowserManager = new BrowserManager(browserConfig, mainLogger);
       await mainBrowserManager.initialize();
+
+      const mainContext = mainBrowserManager.getContext();
+      if (!mainContext) {
+        mainLogger.error("Failed to retrieve main browser context.");
+        throw new ProcessExitError(1);
+      }
 
       const swiperPromises: Promise<SwiperStats>[] = [];
 
@@ -88,9 +115,6 @@ program
           siteLogger.debug(`Site-specific debug mode enabled for ${siteName}.`);
         }
 
-        // Create a new browser context for each site
-        const browserContext = await mainBrowserManager.newContext();
-
         // Initialize site module
         let siteModule;
         switch (siteName) {
@@ -102,16 +126,14 @@ program
             break;
           default:
             siteLogger.error(`Unsupported site: ${siteName}`);
-            await browserContext.close(); // Close context for unsupported site
-            continue; // Skip this site
-        }
+            continue;
+          }
 
-        // Initialize rate limiter
         const rateLimiter = new RateLimiter(siteConfig, siteLogger);
 
-        // Initialize swiper
+        // All sites share the main persistent context (they will each get their own Page inside Swiper.run)
         const swiper = new Swiper(
-          browserContext, // Pass context directly
+          mainContext,
           siteModule,
           rateLimiter,
           siteLogger,
@@ -145,11 +167,29 @@ program
       await mainBrowserManager.close();
 
       mainLogger.success("All swiping sessions completed!");
-      process.exit(0);
+      throw new ProcessExitError(0);
     } catch (error) {
+      if (error instanceof ProcessExitError) {
+        if (require.main === module) {
+          process.exit(error.code);
+        } else {
+          throw error; // Let the test handle it
+        }
+      }
       console.error("Fatal error:", error);
-      process.exit(1);
+      if (require.main === module) {
+        process.exit(1);
+      } else {
+        throw error;
+      }
     }
-  });
+  };
 
-program.parse();
+program.action(mainAction); // Assign the named action
+
+// Conditionally call program.parse() only when index.ts is run directly
+if (require.main === module) {
+  program.parse();
+}
+
+export { program, mainAction };

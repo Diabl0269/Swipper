@@ -36,8 +36,8 @@ This plan outlines the tasks required to refactor Swiper to support running mult
 ## Phase 3: Finalization and Testing
 -   [x] **Task:** Update `src/swiper.ts` to use the prefixed logger. [0c75f1e]
     -   [x] No major changes are expected here if the `Logger` is passed in correctly, but verify all log messages are correctly prefixed during execution.
--   [ ] **Task:** Write tests for the new parallel execution logic.
-    -   [ ] Add a test to `tests/sites/` (or a new test file) to verify that two mock sites can run in parallel.
-    -   [ ] Verify that CLI parsing for `all` and comma-separated lists works as expected.
-    -   [ ] Verify that logs are correctly prefixed.
--   [ ] **Task:** Conductor - User Manual Verification 'Finalization and Testing' (Protocol in workflow.md)
+-   [x] **Task:** Write tests for the new parallel execution logic.
+    -   [x] Add a test to `tests/sites/` (or a new test file) to verify that two mock sites can run in parallel.
+    -   [x] Verify that CLI parsing for `all` and comma-separated lists works as expected.
+    -   [x] Verify that logs are correctly prefixed.
+-   [~] **Task:** Conductor - User Manual Verification 'Finalization and Testing' (Protocol in workflow.md)
