@@ -8,6 +8,13 @@ Swiper is a highly configurable, automated swiping bot for dating apps, designed
 
 While the immediate user is an experienced developer, the long-term vision is to create a bot that is simple enough for non-technical users to set up and run. The user interface and configuration should be intuitive and require minimal technical knowledge.
 
+## Key Features
+
+*   **Multi-Site Support:** Automated swiping on various dating platforms (Tinder, OkCupid, etc.).
+*   **Parallel Execution:** Run multiple site modules concurrently within a single browser instance, using shared persistent contexts for seamless login management.
+*   **Configurable Behavior:** Fine-tune swiping parameters (like ratio, delays) globally or per site.
+*   **Human-like Interaction:** Mimics human behavior with randomized delays and human-like clicks.
+
 ## Key Features & Roadmap
 
 The next phase of development will focus on expanding the bot's capabilities to support more dating platforms and enhancing its robustness.
