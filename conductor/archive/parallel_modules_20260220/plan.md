@@ -1,0 +1,43 @@
+# Implementation Plan: Parallel Module Execution
+
+This plan outlines the tasks required to refactor Swiper to support running multiple site modules concurrently.
+
+## Phase 1: Foundation and Configuration Updates
+-   [x] **Task:** Update CLI argument parsing in `src/index.ts`. [a40bbd8]
+    -   [x] Modify the `site` option to accept a comma-separated string of site names.
+    -   [x] Add logic to handle the special keyword `all`, which should resolve to all sites enabled in the configuration.
+-   [x] **Task:** Refactor configuration loading in `src/config.ts`. [1bd6bcb]
+    -   [x] Create a new method `getSiteConfigs(siteNames: string[]): SiteConfig[]` that returns an array of configurations for the requested sites.
+    -   [x] Ensure `getAllSites` correctly returns all *enabled* sites for the `all` keyword functionality.
+-   [x] **Task:** Implement prefixed logging in `src/utils/logger.ts`. [e29c687]
+    -   [x] Add a `prefix` property to the `Logger` class.
+    -   [x] Add a `withPrefix(prefix: string): Logger` method that returns a new `Logger` instance with the specified prefix.
+    -   [x] Update the `formatMessage` method to include the prefix if it exists (e.g., `[Tinder] [INFO] Message...`).
+-   [x] **Task:** Conductor - User Manual Verification 'Foundation and Configuration Updates' (Protocol in workflow.md) [d8a0823]
+
+## Phase 2: Architectural Refactoring for Concurrency
+-   [x] **Task:** Refactor `BrowserManager` for multi-context support in `src/utils/browser.ts`. [a3dc73b]
+    -   [x] Modify the `initialize` method to launch a `Browser` instance instead of a `BrowserContext`. Store it as `this.browser`.
+    -   [x] Create a new method `newContext(options?: BrowserNewContextOptions): Promise<BrowserContext>` that creates and returns a new `BrowserContext` from the main browser instance.
+    -   [x] Update the `close` method to close the main `Browser` instance.
+    -   [x] The `getContext` method can be deprecated or changed to return the first/main context if needed, but the new `newContext` method will be primary.
+-   [x] **Task:** Update the main application entrypoint in `src/index.ts`. [5091662]
+    -   [x] After parsing site names, loop through them.
+    -   [x] For each site, create a new `BrowserContext` using the updated `BrowserManager`.
+    -   [x] For each site, create a prefixed `Logger` instance.
+    -   [x] For each site, create and configure its own `SiteModule`, `RateLimiter`, and `Swiper` instance.
+    -   [x] Collect all `swiper.run()` promises.
+-   [x] **Task:** Implement the parallel execution logic in `src/index.ts`. [5091662]
+    -   [x] Use `Promise.allSettled` to run all the `swiper.run()` promises concurrently.
+    -   [x] After all promises have settled, log the results for each site (e.g., "Tinder finished successfully", "OkCupid failed: ...").
+    -   [x] Ensure the main `shutdown` function correctly closes the main `Browser` instance.
+-   [x] **Task:** Conductor - User Manual Verification 'Architectural Refactoring for Concurrency' (Protocol in workflow.md) [ff1f19a]
+
+## Phase 3: Finalization and Testing
+-   [x] **Task:** Update `src/swiper.ts` to use the prefixed logger. [0c75f1e]
+    -   [x] No major changes are expected here if the `Logger` is passed in correctly, but verify all log messages are correctly prefixed during execution.
+-   [x] **Task:** Write tests for the new parallel execution logic.
+    -   [x] Add a test to `tests/sites/` (or a new test file) to verify that two mock sites can run in parallel.
+    -   [x] Verify that CLI parsing for `all` and comma-separated lists works as expected.
+    -   [x] Verify that logs are correctly prefixed.
+-   [~] **Task:** Conductor - User Manual Verification 'Finalization and Testing' (Protocol in workflow.md)
