@@ -79,6 +79,10 @@ export class TinderSite extends BaseSite {
         '[aria-label="Close"]', // Added for match popup
         'button[aria-label="Close"]', // Added for match popup
         'button:has-text("X")', // Generic close button
+        'button:has-text("Keep Swiping")', // Specifically for match popup
+        'text="Keep Swiping"', // Specifically for match popup
+        'button:has-text("Back to Tinder")', // Specifically for match popup
+        'text="Back to Tinder"', // Specifically for match popup
         'button:has-text("Maybe Later")',
         'text="Maybe Later"',
         '[aria-label*="Maybe Later"]',
@@ -87,6 +91,10 @@ export class TinderSite extends BaseSite {
         'button:has-text("Not interested")',
         'text="Not interested"',
         '[aria-label*="Not interested"]',
+        'button:has-text("No Thanks")',
+        'text="No Thanks"',
+        'button:has-text("Great!")',
+        'text="Great!"',
       ];
 
       for (const selector of maybeLaterSelectors) {
@@ -584,9 +592,23 @@ export class TinderSite extends BaseSite {
       }
 
       // Check if cards are still present
-      const cards = await page
+      let cards = await page
         .locator('[data-testid="card"], [class*="Card"]')
         .count();
+
+      // If no cards found, a popup (like a match) might be blocking them
+      if (cards === 0) {
+        this.logger.debug("No cards found, checking for blocking popups...");
+        const dismissed = await this.dismissPopup(page);
+        if (dismissed) {
+          this.logger.info("Popup dismissed, re-checking for cards...");
+          await page.waitForTimeout(2000);
+          cards = await page
+            .locator('[data-testid="card"], [class*="Card"]')
+            .count();
+        }
+      }
+
       return cards > 0;
     } catch (_error) { // Renamed error to _error
       this.logger.error(`Error checking for more profiles: ${String(_error)}`);
