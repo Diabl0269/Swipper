@@ -17,17 +17,34 @@ export class Logger {
   private logLevel: LogLevel;
   private logToFile: boolean;
   private logFilePath?: string;
+  private prefix?: string;
 
   /**
    * Creates an instance of Logger.
    * @param logLevel - The minimum log level to display.
    * @param logToFile - Whether to log to a file.
    * @param logFilePath - The path to the log file.
+   * @param prefix - Optional prefix for log messages.
    */
-  constructor(logLevel: LogLevel = LogLevel.INFO, logToFile: boolean = false, logFilePath?: string) {
+  constructor(
+    logLevel: LogLevel = LogLevel.INFO,
+    logToFile: boolean = false,
+    logFilePath?: string,
+    prefix?: string
+  ) {
     this.logLevel = logLevel;
     this.logToFile = logToFile;
     this.logFilePath = logFilePath;
+    this.prefix = prefix;
+  }
+
+  /**
+   * Creates a new Logger instance with a specific prefix.
+   * @param prefix - The prefix to add to all messages.
+   * @returns A new Logger instance.
+   */
+  withPrefix(prefix: string): Logger {
+    return new Logger(this.logLevel, this.logToFile, this.logFilePath, prefix);
   }
 
   /**
@@ -54,7 +71,8 @@ export class Logger {
    */
   private formatMessage(level: string, message: string): string {
     const timestamp = new Date().toISOString();
-    return `[${timestamp}] [${level}] ${message}`;
+    const prefixString = this.prefix ? `[${this.prefix}] ` : '';
+    return `[${timestamp}] [${level}] ${prefixString}${message}`;
   }
 
   /**
