@@ -117,7 +117,23 @@ export class Config {
     if (!siteConfig || !siteConfig.enabled) {
       return null;
     }
-    return siteConfig;
+    return { ...siteConfig, name: siteName }; // Deep copy and add name
+  }
+
+  /**
+   * Gets a list of configurations for multiple specified sites.
+   * @param siteNames - An array of site names to retrieve configurations for.
+   * @returns An array of SiteConfig objects for the specified and enabled sites.
+   */
+  getSiteConfigs(siteNames: string[]): SiteConfig[] {
+    const configs: SiteConfig[] = [];
+    for (const siteName of siteNames) {
+      const siteConfig = this.getSiteConfig(siteName);
+      if (siteConfig) {
+        configs.push({ ...siteConfig, name: siteName }); // Add name to the config
+      }
+    }
+    return configs;
   }
 
   /**

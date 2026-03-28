@@ -13,6 +13,9 @@ This document outlines the technology stack for the Swiper project.
 -   **Automation Framework:** [Playwright](https://playwright.dev/)
     -   Playwright is used for browser automation to interact with the dating websites. It manages the browser instance, user profiles, and simulates user actions.
 
+-   **CLI Framework:** [Commander.js](https://github.com/tj/commander.js)
+    -   Used for parsing command-line arguments and providing a user-friendly CLI interface.
+
 ## Development Dependencies
 
 -   **`tsx`**: For running TypeScript files directly without pre-compilation during development.
