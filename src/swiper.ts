@@ -1,5 +1,5 @@
 import { writeFileSync } from 'fs';
-import { BrowserContext } from 'playwright'; // Import BrowserContext
+import { BrowserContext, Page } from 'playwright'; // Import BrowserContext and Page
 import { SiteModule } from './sites/base';
 import { RateLimiter } from './utils/rateLimiter';
 import { Logger } from './utils/logger';
@@ -65,7 +65,23 @@ export class Swiper {
   async run(): Promise<SwiperStats> {
     const context = this.browserContext; // Use the context directly
 
-    const page = await context.newPage();
+    // Reuse existing blank page if available (launchPersistentContext usually starts with one)
+    const existingPages = context.pages();
+    let page;
+    
+    // Check for an existing blank or newtab page that we can reuse
+    const blankPage = existingPages.find(p => {
+        const url = p.url();
+        return url === 'about:blank' || url === 'chrome://newtab/' || url.startsWith('chrome-extension://');
+    });
+
+    if (blankPage) {
+        this.logger.debug('Reusing existing blank page');
+        page = blankPage;
+    } else {
+        this.logger.debug('Creating new page');
+        page = await context.newPage();
+    }
 
     try {
       // Navigate to the site immediately
@@ -159,34 +175,44 @@ export class Swiper {
       this.logger.success('Swiping session completed!');
       this.printStats();
 
+      // Capture final state
+      await this.takeSnapshot(page, 'final');
+
       return this.stats;
     } catch (_error: unknown) { // Add unknown type assertion
       const errorMessage = _error instanceof Error ? _error.message : String(_error);
       this.logger.error(`Error during swiping: ${errorMessage}`);
       
       // Take a snapshot and screenshot on error for debugging
-      if (page && !page.isClosed()) {
-        try {
-          const timestamp = Date.now();
-          const screenshotPath = `error_screenshot_${timestamp}.png`;
-          const htmlPath = `error_page_${timestamp}.html`;
-
-          await page.screenshot({ path: screenshotPath, fullPage: true });
-          this.logger.info(`Saved error screenshot to: ${screenshotPath}`);
-
-          const html = await page.content();
-          writeFileSync(htmlPath, html);
-          this.logger.info(`Saved error page HTML to: ${htmlPath}`);
-        } catch (_snapshotError: unknown) { // Add unknown type assertion
-          const snapshotErrorMessage = _snapshotError instanceof Error ? _snapshotError.message : String(_snapshotError);
-          this.logger.error(`Failed to take snapshot/screenshot: ${snapshotErrorMessage}`);
-        }
-      }
+      await this.takeSnapshot(page, 'error');
 
       throw _error;
     } finally {
       await page.close();
       // saveStorageState is handled by the BrowserManager externally
+    }
+  }
+
+  /**
+   * Captures a screenshot and HTML snapshot.
+   */
+  private async takeSnapshot(page: Page, prefix: string): Promise<void> {
+    if (page && !page.isClosed()) {
+      try {
+        const timestamp = Date.now();
+        const screenshotPath = `snapshots/${prefix}_screenshot_${timestamp}.png`;
+        const htmlPath = `snapshots/${prefix}_page_${timestamp}.html`;
+
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        this.logger.info(`Saved ${prefix} screenshot to: ${screenshotPath}`);
+
+        const html = await page.content();
+        writeFileSync(htmlPath, html);
+        this.logger.info(`Saved ${prefix} page HTML to: ${htmlPath}`);
+      } catch (_snapshotError: unknown) {
+        const snapshotErrorMessage = _snapshotError instanceof Error ? _snapshotError.message : String(_snapshotError);
+        this.logger.error(`Failed to take snapshot/screenshot: ${snapshotErrorMessage}`);
+      }
     }
   }
 

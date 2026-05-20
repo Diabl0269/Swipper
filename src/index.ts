@@ -27,14 +27,30 @@ program
     "-s, --site <site...>",
     "Dating site(s) to use (comma-separated or 'all')",
     (value, previous) => {
-      // If the current value is the default ["tinder"], replace it
-      if (previous && previous.length === 1 && previous[0] === "tinder" && value !== "tinder") {
-        return value.split(",");
+      const sites = value.split(",").map(s => s.trim().toLowerCase());
+      // If the default value is the only thing in previous, and the user provided something else,
+      // we might want to override it. But the most robust way is to unique the resulting array.
+      // If we are here, the user explicitly provided a --site flag.
+      
+      // If previous is the default ["tinder"], and the user explicitly provided "tinder", 
+      // Commander might have already initialized 'previous' with the default.
+      
+      if (previous && previous.length === 1 && previous[0] === "tinder") {
+          // If the user provided "tinder" again, just return ["tinder"]
+          // If they provided something else, replace the default
+          if (sites.includes("tinder") && sites.length === 1) {
+              return ["tinder"];
+          }
+          // If they provided something else (possibly including tinder as part of a list), 
+          // we should decide whether to keep the default or not. 
+          // Usually, providing a flag should override the default.
+          return sites;
       }
+
       if (previous) {
-        return previous.concat(value.split(","));
+        return Array.from(new Set(previous.concat(sites)));
       }
-      return value.split(",");
+      return sites;
     },
     ["tinder"]
   )
