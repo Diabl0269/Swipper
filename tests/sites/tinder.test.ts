@@ -1,7 +1,7 @@
 import { TinderSite } from '../../src/sites/tinder';
 import type { SiteConfig } from '../../src/types';
 import { Logger } from '../../src/utils/logger';
-import { Page, Locator, Keyboard } from 'playwright';
+import { Page, Keyboard } from 'playwright';
 
 jest.mock('../../src/utils/logger');
 
@@ -9,7 +9,7 @@ describe('TinderSite', () => {
   let site: TinderSite;
   let config: SiteConfig;
   let logger: Logger;
-  let mockPage: jest.Mocked<Page>;
+  // let mockPage: jest.Mocked<Page>; // Removed unused mockPage
 
   beforeEach(() => {
     config = {
@@ -19,8 +19,9 @@ describe('TinderSite', () => {
       maxSwipesPerSession: 100,
     };
     logger = new Logger();
-    mockPage = {
-      locator: jest.fn().mockReturnThis(),
+    // ...
+    site = new TinderSite(config, logger);
+  });
       first: jest.fn().mockReturnThis(),
       isVisible: jest.fn(),
       click: jest.fn(),
