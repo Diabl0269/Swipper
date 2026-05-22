@@ -71,32 +71,23 @@ export class TinderSite extends BaseSite {
    * @param page - The Playwright page instance.
    * @returns A promise that resolves to true if a popup was dismissed, false otherwise.
    */
+  private async isHardLimit(page: Page): Promise<boolean> {
+    const limitPattern = /out of likes|no more|limit|upgrade|refresh|try again|send as many likes|unlimited likes|subscription|tinder plus|plans|gold|choose a plan/i;
+    return await page.locator('[role="dialog"], .Modal, .Overlay').locator(`text=${limitPattern}`).count() > 0;
+  }
+
   async dismissPopup(page: Page): Promise<boolean> {
     this.logger.debug("Attempting to dismiss popup...");
     try {
-      // Before dismissing, check if this is a "hard limit" modal that we shouldn't close.
-      const limitPattern = /out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i;
-      const isLimitModal = await page.locator('[role="dialog"], .Modal, .Overlay').locator(`text=${limitPattern}`).count() > 0;
-      
-      if (isLimitModal) {
-        this.logger.debug("Detected limit modal, will not dismiss.");
-        return false;
-      }
-
       // Check for "Maybe Later" button in various possible locations
       const maybeLaterSelectors = [
-        'button:has-text("Close")',
-        'text="Close"',
-        'button.close',
-        '[aria-label="Close"]',
-        'button[aria-label="Close"]',
-        'button[title="Back to Tinder"]',
-        'button[title="Cancel"]',
-        'button:has-text("Back to Tinder")',
-        'text="Back to Tinder"',
-        'button:has-text("Keep Swiping")',
-        'text="Keep Swiping"',
-        'button:has-text("X")',
+        '[aria-label="Close"]', // Added for match popup
+        'button[aria-label="Close"]', // Added for match popup
+        'button:has-text("X")', // Generic close button
+        'button:has-text("Keep Swiping")', // Specifically for match popup
+        'text="Keep Swiping"', // Specifically for match popup
+        'button:has-text("Back to Tinder")', // Specifically for match popup
+        'text="Back to Tinder"', // Specifically for match popup
         'button:has-text("Maybe Later")',
         'text="Maybe Later"',
         '[aria-label*="Maybe Later"]',
@@ -566,46 +557,12 @@ export class TinderSite extends BaseSite {
 
       // Check if we hit a limit or error message
       // Look for various limit-related messages from Tinder
-      const limitPattern = /out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i;
       const errorMessages = await page
-        .locator(`text=${limitPattern}`)
+        .locator("text=/out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i")
         .count();
-
-      if (errorMessages > 0) {        // Check if the limit message is within a modal (hard limit)
-        const limitInModal = await page
-          .locator('[role="dialog"]')
-          .locator(`text=${limitPattern}`)
-          .count();
-
-        if (limitInModal > 0) {
-          const message = await page
-            .locator('[role="dialog"]')
-            .locator(`text=${limitPattern}`)
-            .first()
-            .textContent();
-          this.logger.warn(`Hit a hard limit in a modal: ${message}. Stopping.`);
-          // Try to dismiss it just so the browser is left in a clean state, but still return false
-          await this.dismissPopup(page);
-          return false;
-        }
-
-        // Try to dismiss any popup that might have appeared and contains these words (soft limit/upsell)
-        const dismissed = await this.dismissPopup(page);
-        if (dismissed) {
-          this.logger.info("Dismissed a popup that was showing a limit message. Re-checking for cards...");
-          await page.waitForTimeout(1000);
-          
-          // If we have cards again, then the swipe was actually successful (or at least we can continue)
-          const cards = await page
-            .locator('[data-testid="card"], [class*="Card"]')
-            .count();
-          if (cards > 0) {
-            return true;
-          }
-        }
-
+      if (errorMessages > 0) {
         const message = await page
-          .locator(`text=${limitPattern}`)
+          .locator("text=/out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i")
           .first()
           .textContent();
         this.logger.warn(`Hit a limit: ${message}`);
@@ -626,20 +583,25 @@ export class TinderSite extends BaseSite {
    */
   async hasMoreProfiles(page: Page): Promise<boolean> {
     try {
-      // First, check for and dismiss any popups that might be blocking the view
-      // or containing words like "upgrade" that would trigger a false limit detection
-      await this.dismissPopup(page);
-
-      // Check for "out of likes" or similar messages that indicate we can't swipe anymore
-      // Check for "out of likes" or similar messages that indicate we can't swipe anymore
-      const limitPattern = /out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i;
-
-      // Specifically check for these keywords in modal-like structures.
-      const limitInModal = await page.locator('[role="dialog"], .Modal, .Overlay').locator(`text=${limitPattern}`).count() > 0;
-
-      if (limitInModal) {
-        this.logger.warn("Hard limit or paywall detected in modal. Stopping swiping session.");
+      // First, check for hard limit paywalls
+      if (await this.isHardLimit(page)) {
+        this.logger.warn("Hard limit or paywall detected. Stopping swiping session.");
         await this.dismissPopup(page);
+        return false;
+      }
+
+      // Check for "out of likes" or similar messages that indicate we can't swipe anymore
+      const limitPattern = /out of likes|no more|limit|upgrade|refresh|try again|send as many likes/i;
+      const limitMessages = await page
+        .locator(`text=${limitPattern}`)
+        .count();
+      
+      if (limitMessages > 0) {
+        const message = await page
+          .locator(`text=${limitPattern}`)
+          .first()
+          .textContent();
+        this.logger.warn(`No more profiles available: ${message}`);
         return false;
       }
 
@@ -648,7 +610,7 @@ export class TinderSite extends BaseSite {
         .locator('[data-testid="card"], [class*="Card"]')
         .count();
 
-      // If no cards found, try one last time to dismiss a popup that might have appeared since the first check
+      // If no cards found, a popup (like a match) might be blocking them
       if (cards === 0) {
         this.logger.debug("No cards found, checking for blocking popups...");
         const dismissed = await this.dismissPopup(page);

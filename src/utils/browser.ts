@@ -193,11 +193,11 @@ export class BrowserManager {
       this.logger.success('Browser instance initialized with Chrome profile copy');
       this.logger.info('Note: Chrome can remain open - we\'re using a copy of your profile');
 
-      // Warm up: navigate the initial page to about:blank if it exists
-      const pages = this.mainPersistentContext.pages();
-      if (pages.length > 0) {
-          await pages[0].goto('about:blank');
-      }
+      // WARM UP: Navigate to a blank page and wait a moment to ensure profile is loaded
+      const page = await this.mainPersistentContext.newPage();
+      await page.goto('about:blank');
+      await page.waitForTimeout(2000);
+      await page.close();
 
     } catch (_error: unknown) {
       const errorMessage = _error instanceof Error ? _error.message : String(_error);
