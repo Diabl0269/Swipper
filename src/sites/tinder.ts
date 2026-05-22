@@ -75,7 +75,7 @@ export class TinderSite extends BaseSite {
     this.logger.debug("Attempting to dismiss popup...");
     try {
       // Before dismissing, check if this is a "hard limit" modal that we shouldn't close.
-      const limitPattern = /out of likes|limit|upgrade|refresh|try again|no more|send as many likes|unlimited likes|subscription|tinder plus|plans|gold/i;
+      const limitPattern = /out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i;
       const isLimitModal = await page.locator('[role="dialog"], .Modal, .Overlay').locator(`text=${limitPattern}`).count() > 0;
       
       if (isLimitModal) {
@@ -566,7 +566,7 @@ export class TinderSite extends BaseSite {
 
       // Check if we hit a limit or error message
       // Look for various limit-related messages from Tinder
-      const limitPattern = /out of likes|limit|upgrade|refresh|try again|no more|send as many likes|unlimited likes|subscription|tinder plus|plans|gold/i;
+      const limitPattern = /out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i;
       const errorMessages = await page
         .locator(`text=${limitPattern}`)
         .count();
