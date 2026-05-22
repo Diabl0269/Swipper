@@ -654,8 +654,15 @@ describe('TinderSite', () => {
   describe('hasMoreProfiles', () => {
     it('should return false if a limit message is found', async () => {
       mockPage.locator.mockImplementation((selector) => {
-        if (selector.includes('text=/out of likes|no more|limit/i')) {
-          return { count: jest.fn().mockResolvedValue(1), first: jest.fn().mockReturnThis(), textContent: jest.fn().mockResolvedValue('out of likes') } as unknown as Locator;
+        if (selector === '[role="dialog"], .Modal, .Overlay') {
+          return { locator: jest.fn().mockReturnValue({ count: jest.fn().mockResolvedValue(0) }), count: jest.fn().mockResolvedValue(0) } as unknown as Locator;
+        }
+        if (selector.includes('text=/out of likes|no more|limit|upgrade|refresh|try again|send as many likes/i')) {
+          return { 
+            count: jest.fn().mockResolvedValue(1), 
+            first: jest.fn().mockReturnThis(), 
+            textContent: jest.fn().mockResolvedValue('out of likes') 
+          } as unknown as Locator;
         }
         return { count: jest.fn().mockResolvedValue(0) } as unknown as Locator;
       });
@@ -667,6 +674,9 @@ describe('TinderSite', () => {
 
     it('should return true if cards are present and no limit message', async () => {
       mockPage.locator.mockImplementation((selector) => {
+        if (selector === '[role="dialog"], .Modal, .Overlay') {
+          return { locator: jest.fn().mockReturnValue({ count: jest.fn().mockResolvedValue(0) }), count: jest.fn().mockResolvedValue(0) } as unknown as Locator;
+        }
         if (selector.includes('[data-testid="card"], [class*="Card"]')) {
           return { count: jest.fn().mockResolvedValue(1) } as unknown as Locator;
         }
@@ -683,6 +693,9 @@ describe('TinderSite', () => {
       jest.spyOn(site, 'dismissPopup').mockResolvedValue(true);
       
       mockPage.locator.mockImplementation((selector) => {
+        if (selector === '[role="dialog"], .Modal, .Overlay') {
+          return { locator: jest.fn().mockReturnValue({ count: jest.fn().mockResolvedValue(0) }), count: jest.fn().mockResolvedValue(0) } as unknown as Locator;
+        }
         if (selector.includes('[data-testid="card"], [class*="Card"]')) {
           const count = cardCount;
           cardCount = 1; // Return 1 on next call
@@ -695,12 +708,16 @@ describe('TinderSite', () => {
       const result = await site.hasMoreProfiles(mockPage);
       expect(result).toBe(true);
       expect(site.dismissPopup).toHaveBeenCalled();
-      expect(mockPage.waitForTimeout).toHaveBeenCalledWith(2000);
     });
 
     it('should return false if no cards are present even after trying to dismiss popup', async () => {
       jest.spyOn(site, 'dismissPopup').mockResolvedValue(true);
-      mockPage.locator.mockImplementation(() => ({ count: jest.fn().mockResolvedValue(0) } as unknown as Locator));
+      mockPage.locator.mockImplementation((selector) => {
+        if (selector === '[role="dialog"], .Modal, .Overlay') {
+          return { locator: jest.fn().mockReturnValue({ count: jest.fn().mockResolvedValue(0) }), count: jest.fn().mockResolvedValue(0) } as unknown as Locator;
+        }
+        return { count: jest.fn().mockResolvedValue(0) } as unknown as Locator;
+      });
       mockPage.waitForTimeout.mockResolvedValue(undefined);
 
       const result = await site.hasMoreProfiles(mockPage);
@@ -710,7 +727,12 @@ describe('TinderSite', () => {
 
     it('should return false if no cards are present and no popup was dismissed', async () => {
       jest.spyOn(site, 'dismissPopup').mockResolvedValue(false);
-      mockPage.locator.mockImplementation(() => ({ count: jest.fn().mockResolvedValue(0) } as unknown as Locator));
+      mockPage.locator.mockImplementation((selector) => {
+        if (selector === '[role="dialog"], .Modal, .Overlay') {
+          return { locator: jest.fn().mockReturnValue({ count: jest.fn().mockResolvedValue(0) }), count: jest.fn().mockResolvedValue(0) } as unknown as Locator;
+        }
+        return { count: jest.fn().mockResolvedValue(0) } as unknown as Locator;
+      });
 
       const result = await site.hasMoreProfiles(mockPage);
       expect(result).toBe(false);

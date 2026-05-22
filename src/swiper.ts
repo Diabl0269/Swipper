@@ -65,7 +65,9 @@ export class Swiper {
   async run(): Promise<SwiperStats> {
     const context = this.browserContext; // Use the context directly
 
-    const page = await context.newPage();
+    // Reuse existing page if available to prevent opening multiple tabs
+    const pages = context.pages();
+    const page = pages.length > 0 ? pages[0] : await context.newPage();
 
     try {
       // Navigate to the site immediately

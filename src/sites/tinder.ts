@@ -71,6 +71,11 @@ export class TinderSite extends BaseSite {
    * @param page - The Playwright page instance.
    * @returns A promise that resolves to true if a popup was dismissed, false otherwise.
    */
+  private async isHardLimit(page: Page): Promise<boolean> {
+    const limitPattern = /out of likes|no more|limit|upgrade|refresh|try again|send as many likes|unlimited likes|subscription|tinder plus|plans|gold|choose a plan/i;
+    return await page.locator('[role="dialog"], .Modal, .Overlay').locator(`text=${limitPattern}`).count() > 0;
+  }
+
   async dismissPopup(page: Page): Promise<boolean> {
     this.logger.debug("Attempting to dismiss popup...");
     try {
@@ -578,13 +583,22 @@ export class TinderSite extends BaseSite {
    */
   async hasMoreProfiles(page: Page): Promise<boolean> {
     try {
+      // First, check for hard limit paywalls
+      if (await this.isHardLimit(page)) {
+        this.logger.warn("Hard limit or paywall detected. Stopping swiping session.");
+        await this.dismissPopup(page);
+        return false;
+      }
+
       // Check for "out of likes" or similar messages that indicate we can't swipe anymore
+      const limitPattern = /out of likes|no more|limit|upgrade|refresh|try again|send as many likes/i;
       const limitMessages = await page
-        .locator("text=/out of likes|no more|limit|upgrade|refresh|try again|send as many likes/i")
+        .locator(`text=${limitPattern}`)
         .count();
+      
       if (limitMessages > 0) {
         const message = await page
-          .locator("text=/out of likes|no more|limit|upgrade|refresh|try again|send as many likes/i")
+          .locator(`text=${limitPattern}`)
           .first()
           .textContent();
         this.logger.warn(`No more profiles available: ${message}`);
