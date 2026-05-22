@@ -62,9 +62,22 @@ describe('TinderSite', () => {
           height: 50,
         }),
       };
-      mockPage.locator.mockReturnValue({
-        first: () => mockFirst,
-      } as unknown as Locator); // Changed to as unknown as Locator
+      mockPage.locator.mockImplementation((selector) => {
+        if (selector === '[role="dialog"], .Modal, .Overlay') {
+          return { locator: jest.fn().mockReturnValue({ count: jest.fn().mockResolvedValue(0) }), count: jest.fn().mockResolvedValue(0) } as unknown as Locator;
+        }
+        if (selector.includes('text=/out of likes|no more|limit|upgrade|refresh|try again|send as many likes/i')) {
+          return { 
+            count: jest.fn().mockResolvedValue(1), 
+            first: jest.fn().mockReturnThis(), 
+            textContent: jest.fn().mockResolvedValue('out of likes') 
+          } as unknown as Locator;
+        }
+        if (selector.includes('[data-testid="card"]')) {
+          return { count: jest.fn().mockResolvedValue(1) } as unknown as Locator;
+        }
+        return { count: jest.fn().mockResolvedValue(0) } as unknown as Locator;
+      });
 
       // Mock viewportSize
       mockPage.viewportSize = jest.fn().mockReturnValue({

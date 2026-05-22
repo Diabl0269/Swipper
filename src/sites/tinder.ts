@@ -632,7 +632,7 @@ export class TinderSite extends BaseSite {
 
       // Check for "out of likes" or similar messages that indicate we can't swipe anymore
       // Check for "out of likes" or similar messages that indicate we can't swipe anymore
-      const limitPattern = /out of likes|no more|limit|upgrade|refresh|try again|send as many likes|unlimited likes|subscription|tinder plus|plans|gold|choose a plan/i;
+      const limitPattern = /out of likes|limit|upgrade|refresh|try again|no more|send as many likes/i;
 
       // Specifically check for these keywords in modal-like structures.
       const limitInModal = await page.locator('[role="dialog"], .Modal, .Overlay').locator(`text=${limitPattern}`).count() > 0;
